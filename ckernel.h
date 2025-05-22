@@ -11,7 +11,8 @@ private:
     explicit CKernel(QObject *parent = nullptr);
     //私有拷贝构造
     explicit CKernel(const CKernel & kernel){}
-
+    ~CKernel();
+    void loadIniFile();
 signals:
 
 public:
@@ -26,6 +27,9 @@ private slots:
     void slot_closeMainDialog();
 private:
     MainDialog* m_pMainDialog;
+
+    QString m_ip;
+    QString m_port;
 };
 
 #endif // CKERNEL_H
