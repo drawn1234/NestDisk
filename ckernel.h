@@ -4,9 +4,11 @@
 #include <QObject>
 #include "maindialog.h"
 #include <qdebug.h>
-#include <TcpClientMediator.h>.
+#include <TcpClientMediator.h>
 #include <TcpServerMediator.h>
 #include <QMessageBox>
+
+//#define USE_SERVER 1
 class INetMediator;
 class CKernel : public QObject
 {
@@ -33,12 +35,16 @@ private slots:
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
+#ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);
+#endif
 private:
     MainDialog* m_pMainDialog;
     TcpClientMediator* m_pClient;
+#ifdef USE_SERVER
     TcpServerMediator* m_pServer;
+#endif
     QString m_ip;
     QString m_port;
 };
