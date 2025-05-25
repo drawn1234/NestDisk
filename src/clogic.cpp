@@ -19,10 +19,10 @@ void CLogic::RegisterRq(sock_fd clientfd,char* szbuf,int nlen)
 //登录
 void CLogic::LoginRq(sock_fd clientfd ,char* szbuf,int nlen)
 {
-//    cout << "clientfd:"<< clientfd << __func__ << endl;
+    cout << "clientfd:"<< clientfd << __func__ << endl;
     _DEF_COUT_FUNC_
 
-//    STRU_LOGIN_RS rs;
-//    rs.m_lResult = password_error;
-//    SendData( clientfd , (char*)&rs , sizeof rs );
+    STRU_LOGIN_RS rs;
+   // rs.m_lResult = password_error;
+    SendData( clientfd , (char*)&rs , sizeof rs );
 }
