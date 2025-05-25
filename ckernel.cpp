@@ -13,7 +13,7 @@ CKernel::CKernel(QObject *parent)
     //创建网络中介者
     m_pClient=new TcpClientMediator;
     //客户端连接真实地址
-    m_pClient->OpenNet("192.168.137.1");
+    m_pClient->OpenNet("10.50.219.100",8000);
     //网络信号连接
     connect(m_pClient,SIGNAL(SIG_ReadyData(uint,char*,int)),
             this,SLOT(slot_dealClientData(uint,char*,int)));
@@ -37,6 +37,10 @@ CKernel::CKernel(QObject *parent)
     //长度输出函数-sizeof(数组名)-数组长度
     //strlen(0)+1
 #endif
+
+    //发送登录请求测试
+    STRU_LOGIN_RQ rq;
+    m_pClient->SendData(0,(char*)&rq,sizeof(rq));
 
 }
 
@@ -96,6 +100,10 @@ void CKernel::slot_dealClientData(uint from, char *data, int len)
     QMessageBox::about(NULL,"提示",str);
     //阻塞的，模态窗口-不可切换
 #endif
+    //测试服务器回复输出
+    qDebug()<<"type:"<<*(int*)data;
+
+
     //回收资源
     delete[] data;
     data=nullptr;

@@ -7,7 +7,7 @@
 #include <TcpClientMediator.h>
 #include <TcpServerMediator.h>
 #include <QMessageBox>
-
+#include<packdef.h>
 //#define USE_SERVER 1
 class INetMediator;
 class CKernel : public QObject
