@@ -8,6 +8,16 @@
 #include <TcpServerMediator.h>
 #include <QMessageBox>
 #include<packdef.h>
+#include"logindialog.h"
+
+//协议映射表
+//类成员函数指针
+class CKernel;
+typedef void (CKernel::*PFUN)(uint from,char* data,int len);
+
+
+
+
 //#define USE_SERVER 1
 class INetMediator;
 class CKernel : public QObject
@@ -35,18 +45,27 @@ private slots:
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
+
+    void slot_dealLoginRs(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);
 #endif
+
+private:
+    void setNetPackMap();
 private:
     MainDialog* m_pMainDialog;
     TcpClientMediator* m_pClient;
+    loginDialog* m_pLoginDialog;
 #ifdef USE_SERVER
     TcpServerMediator* m_pServer;
 #endif
     QString m_ip;
     QString m_port;
+
+    //协议处理函数数组
+    PFUN m_netPackMap[_DEF_PACK_COUNT];
 };
 
 #endif // CKERNEL_H

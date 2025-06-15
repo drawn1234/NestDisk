@@ -85,6 +85,8 @@ typedef struct STRU_LOGIN_RS
 	PackType type;
 	int result;
 	int userid;
+    //登录用户名
+    char name[_MAX_SIZE];
 
 }STRU_LOGIN_RS;
 

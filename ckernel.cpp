@@ -3,6 +3,9 @@
 #include <QFileInfo>
 #include <QSettings>
 
+//定义带参数宏计算协议数
+#define NetMap(a) m_netPackMap[a-_DEF_PACK_BASE]
+
 CKernel::CKernel(QObject *parent)
     : QObject{parent}
 {
@@ -13,7 +16,9 @@ CKernel::CKernel(QObject *parent)
     //创建网络中介者
     m_pClient=new TcpClientMediator;
     //客户端连接真实地址
-    m_pClient->OpenNet("10.50.219.100",8000);
+   // m_pClient->OpenNet("10.50.219.100",8000);
+    //调用协议初始化
+    this->setNetPackMap();
     //网络信号连接
     connect(m_pClient,SIGNAL(SIG_ReadyData(uint,char*,int)),
             this,SLOT(slot_dealClientData(uint,char*,int)));
@@ -30,6 +35,11 @@ CKernel::CKernel(QObject *parent)
      connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
     m_pMainDialog->show();
 
+    //创建登录窗口并显示
+    m_pLoginDialog=new loginDialog;
+    m_pLoginDialog->show();
+    //绑定信号与处理函数
+
 #ifdef USE_SERVER
     //发送数据测试给服务器
     char buf[]="hello server";
@@ -39,8 +49,8 @@ CKernel::CKernel(QObject *parent)
 #endif
 
     //发送登录请求测试
-    STRU_LOGIN_RQ rq;
-    m_pClient->SendData(0,(char*)&rq,sizeof(rq));
+   // STRU_LOGIN_RQ rq;
+    //m_pClient->SendData(0,(char*)&rq,sizeof(rq));
 
 }
 
@@ -100,6 +110,18 @@ void CKernel::slot_dealClientData(uint from, char *data, int len)
     QMessageBox::about(NULL,"提示",str);
     //阻塞的，模态窗口-不可切换
 #endif
+
+    //调用处理函数
+    int type =*(int*)data;
+    //数据验证
+    if(type>=_DEF_PACK_BASE&type<_DEF_PACK_BASE+_DEF_PACK_COUNT){
+        PFUN pf= NetMap(type);
+        if(pf){
+            (this->*pf)(from,data,len);
+        }
+    }
+
+
     //测试服务器回复输出
     qDebug()<<"type:"<<*(int*)data;
 
@@ -108,6 +130,26 @@ void CKernel::slot_dealClientData(uint from, char *data, int len)
     delete[] data;
     data=nullptr;
 
+}
+
+void CKernel::slot_dealLoginRs(uint from, char *data, int len)
+{
+
+
+}
+
+
+
+
+//绑定协议处理函数
+void CKernel::setNetPackMap()
+{
+    //清空协议处理数组
+    memset(m_netPackMap,0,sizeof(PFUN)*_DEF_PACK_COUNT);
+
+    //协议映射表 key 协议偏移量 value 函数指针
+    //通过协议头找到对应处理函数
+    NetMap(_DEF_PACK_LOGIN_RS)=&CKernel::slot_dealLoginRs;
 }
 
 #ifdef USE_SERVER
