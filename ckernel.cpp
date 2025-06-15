@@ -16,7 +16,7 @@ CKernel::CKernel(QObject *parent)
     //创建网络中介者
     m_pClient=new TcpClientMediator;
     //客户端连接真实地址
-   // m_pClient->OpenNet("10.50.219.100",8000);
+    m_pClient->OpenNet("10.51.31.141",8000);
     //调用协议初始化
     this->setNetPackMap();
     //网络信号连接
@@ -31,9 +31,9 @@ CKernel::CKernel(QObject *parent)
 #endif
 
     //创建窗口对象，显示
-    m_pMainDialog=new MainDialog;
-     connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
-    m_pMainDialog->show();
+    // m_pMainDialog=new MainDialog;
+    //  connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
+    // m_pMainDialog->show();
 
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
@@ -98,8 +98,43 @@ void CKernel::slot_closeMainDialog()
 {
     //关闭窗口，回收窗口对象
     qDebug()<<__func__;
+    m_pClient->CloseNet();
+    delete m_pClient;
     delete m_pMainDialog;
     m_pMainDialog=nullptr;
+    delete m_pLoginDialog;
+}
+
+void CKernel::slot_registerCommit(QString tel, QString pass, QString name)
+{
+    qDebug()<<__func__;
+    //处理注册数据
+    //1.打包注册请求
+    STRU_REGISTER_RQ rq;
+    //兼容中文
+    std::string strName=name.toStdString();
+    strcpy(rq.name,strName.c_str());
+    strcpy(rq.tel,tel.toStdString().c_str());
+    //todo:密码转换为md5
+    strcpy(rq.password,pass.toStdString().c_str());
+
+    //2. 发送给服务器
+    sendData((char*)&rq,sizeof(rq));
+}
+
+void CKernel::slot_loginCommit(QString tel, QString pass)
+{
+    qDebug()<<__func__;
+    //处理登录数据
+    //1.打包注册请求
+    STRU_LOGIN_RQ rq;
+    strcpy(rq.tel,tel.toStdString().c_str());
+    //todo:密码转换为md5
+    strcpy(rq.password,pass.toStdString().c_str());
+
+    //2. 发送给服务器
+    sendData((char*)&rq,sizeof(rq));
+
 }
 
 void CKernel::slot_dealClientData(uint from, char *data, int len)
@@ -144,12 +179,19 @@ void CKernel::slot_dealLoginRs(uint from, char *data, int len)
 //绑定协议处理函数
 void CKernel::setNetPackMap()
 {
+    qDebug()<<__func__;
     //清空协议处理数组
     memset(m_netPackMap,0,sizeof(PFUN)*_DEF_PACK_COUNT);
 
     //协议映射表 key 协议偏移量 value 函数指针
     //通过协议头找到对应处理函数
     NetMap(_DEF_PACK_LOGIN_RS)=&CKernel::slot_dealLoginRs;
+}
+
+void CKernel::sendData(char* buf,int len)
+{
+    //发送消息
+    m_pClient->SendData(0,buf,len);
 }
 
 #ifdef USE_SERVER

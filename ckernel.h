@@ -42,6 +42,8 @@ public:
 private slots:
     //普通槽函数
     void slot_closeMainDialog();
+    void slot_registerCommit(QString tel,QString pass,QString name);
+    void slot_loginCommit(QString tel,QString pass);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
@@ -54,6 +56,7 @@ private slots:
 
 private:
     void setNetPackMap();
+    void sendData(char* buf,int len);
 private:
     MainDialog* m_pMainDialog;
     TcpClientMediator* m_pClient;
