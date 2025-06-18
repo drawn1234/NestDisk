@@ -2,10 +2,10 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QSettings>
-
+#include "md5.h"
 //定义带参数宏计算协议数
 #define NetMap(a) m_netPackMap[a-_DEF_PACK_BASE]
-
+static std::string getMD5(QString val);
 CKernel::CKernel(QObject *parent)
     : QObject{parent}
 {
@@ -30,15 +30,16 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_dealServerData(uint,char*,int)));
 #endif
 
-    //创建窗口对象，显示
-    // m_pMainDialog=new MainDialog;
-    //  connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
-    // m_pMainDialog->show();
+    //创建窗口对象
+    m_pMainDialog=new MainDialog;
+     connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
 
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
     //绑定信号与处理函数
+    connect(m_pLoginDialog,SIGNAL(SIG_loginCommit(QString,QString)),this,SLOT(slot_loginCommit(QString,QString)));
+    connect(m_pLoginDialog,SIGNAL(SIG_registerCommit(QString,QString,QString)),this,SLOT(slot_registerCommit(QString,QString,QString)));
 
 #ifdef USE_SERVER
     //发送数据测试给服务器
@@ -48,9 +49,6 @@ CKernel::CKernel(QObject *parent)
     //strlen(0)+1
 #endif
 
-    //发送登录请求测试
-   // STRU_LOGIN_RQ rq;
-    //m_pClient->SendData(0,(char*)&rq,sizeof(rq));
 
 }
 
@@ -116,7 +114,8 @@ void CKernel::slot_registerCommit(QString tel, QString pass, QString name)
     strcpy(rq.name,strName.c_str());
     strcpy(rq.tel,tel.toStdString().c_str());
     //todo:密码转换为md5
-    strcpy(rq.password,pass.toStdString().c_str());
+    // strcpy(rq.password,pass.toStdString().c_str());
+    strcpy(rq.password,getMD5(pass).c_str());
 
     //2. 发送给服务器
     sendData((char*)&rq,sizeof(rq));
@@ -188,8 +187,22 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_LOGIN_RS)=&CKernel::slot_dealLoginRs;
 }
 
+#define MD5_KEY "1234"
+//生成MD5函数
+//规定给输入的明文，加上对应的类型key值，以val_key的形式给明文加盐
+//使用加盐后的明文生成MD5值
+static std::string getMD5(QString val){
+    qDebug()<<__func__;
+    //static限制当前文件可用
+    QString str=QString("%1_%2").arg(val).arg(MD5_KEY);
+    MD5 md5(str.toStdString().c_str());
+    qDebug()<<str<<"对应MD5"<<md5.toString().c_str();
+    return md5.toString();
+}
+
 void CKernel::sendData(char* buf,int len)
 {
+    qDebug()<<__func__;
     //发送消息
     m_pClient->SendData(0,buf,len);
 }

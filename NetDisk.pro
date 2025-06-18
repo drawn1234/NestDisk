@@ -13,6 +13,9 @@ include(./netapi/netapi.pri)
 
 INCLUDEPATH +=./netapi/
 
+include(./md5/md5.pri)
+INCLUDEPATH +=./md5
+
 SOURCES += \
     ckernel.cpp \
     logindialog.cpp \
@@ -35,3 +38,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     resources.qrc
+
+DISTFILES += \
+    md5/md5.pri
