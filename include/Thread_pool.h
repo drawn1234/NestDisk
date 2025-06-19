@@ -2,7 +2,7 @@
 #define _THREADPOOL_H
 #include "packdef.h"
 
-
+//任务结构体
 typedef struct
 {
     void * (*task)(void*);
