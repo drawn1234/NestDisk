@@ -24,6 +24,7 @@
 //注册请求的结果
 #define user_is_exist		(0)
 #define register_success	(1)
+#define register_error      (2)
 //登录请求的结果
 #define user_not_exist		(0)
 #define password_error		(1)

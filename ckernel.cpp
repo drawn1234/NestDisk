@@ -10,18 +10,19 @@ CKernel::CKernel(QObject *parent)
     : QObject{parent}
 {
     //加载配置文件
-    m_ip="127.0.0.1";
-    m_port="9876";
+    m_ip="";
+    m_port="";
     loadIniFile();
     //创建网络中介者
     m_pClient=new TcpClientMediator;
     //客户端连接真实地址
-    m_pClient->OpenNet("10.51.31.141",8000);
+    m_pClient->OpenNet(m_ip.toStdString().c_str(),m_port.toShort());
     //调用协议初始化
     this->setNetPackMap();
     //网络信号连接
     connect(m_pClient,SIGNAL(SIG_ReadyData(uint,char*,int)),
             this,SLOT(slot_dealClientData(uint,char*,int)));
+
 #ifdef USE_SERVER
     //开启服务器网络
     m_pServer->OpenNet();
@@ -129,7 +130,8 @@ void CKernel::slot_loginCommit(QString tel, QString pass)
     STRU_LOGIN_RQ rq;
     strcpy(rq.tel,tel.toStdString().c_str());
     //todo:密码转换为md5
-    strcpy(rq.password,pass.toStdString().c_str());
+    //strcpy(rq.password,pass.toStdString().c_str());
+    strcpy(rq.password,getMD5(pass).c_str());
 
     //2. 发送给服务器
     sendData((char*)&rq,sizeof(rq));
@@ -147,6 +149,8 @@ void CKernel::slot_dealClientData(uint from, char *data, int len)
 
     //调用处理函数
     int type =*(int*)data;
+    //测试服务器回复输出
+    qDebug()<<"type:"<<*(int*)data;
     //数据验证
     if(type>=_DEF_PACK_BASE&type<_DEF_PACK_BASE+_DEF_PACK_COUNT){
         PFUN pf= NetMap(type);
@@ -155,21 +159,51 @@ void CKernel::slot_dealClientData(uint from, char *data, int len)
         }
     }
 
-
-    //测试服务器回复输出
-    qDebug()<<"type:"<<*(int*)data;
-
-
     //回收资源
     delete[] data;
     data=nullptr;
 
 }
 
+void CKernel::slot_dealRegisterRs(uint from, char *data, int len)
+{
+    qDebug()<<__func__;
+    //1. 拆包
+    STRU_REGISTER_RS* rs=(STRU_REGISTER_RS*)data;
+    //2. 判断处理结果
+    switch(rs->result){
+    case user_is_exist:
+        QMessageBox::about(m_pLoginDialog,"提示","用户已存在,注册失败");
+        break;
+    case register_success:
+        QMessageBox::about(m_pLoginDialog,"提示","注册成功");
+        break;
+    case register_error:
+        QMessageBox::about(m_pLoginDialog,"提示","服务器内部原因，注册失败");
+        break;
+    }
+
+
+}
+
 void CKernel::slot_dealLoginRs(uint from, char *data, int len)
 {
-
-
+    qDebug()<<__func__;
+    //1. 拆包
+    STRU_LOGIN_RS* rs=(STRU_LOGIN_RS*)data;
+    //2. 处理结果
+    switch(rs->result){
+    case user_not_exist:
+        QMessageBox::about(m_pLoginDialog,"提示","用户不存在，登录失败");
+        break;
+    case password_error:
+        QMessageBox::about(m_pLoginDialog,"提示","密码错误");
+        break;
+    case login_success:
+        m_pLoginDialog->close();
+        m_pMainDialog->show();
+        break;
+    }
 }
 
 
@@ -185,6 +219,7 @@ void CKernel::setNetPackMap()
     //协议映射表 key 协议偏移量 value 函数指针
     //通过协议头找到对应处理函数
     NetMap(_DEF_PACK_LOGIN_RS)=&CKernel::slot_dealLoginRs;
+    NetMap(_DEF_PACK_REGISTER_RS)=&CKernel::slot_dealRegisterRs;
 }
 
 #define MD5_KEY "1234"

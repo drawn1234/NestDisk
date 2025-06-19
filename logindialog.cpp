@@ -101,7 +101,7 @@ void loginDialog::on_pb_submit_clicked()
     //获取信息
     QString tel=ui->le_tel->text();
     QString telTmp=tel;
-    QString pass=ui->le_tel->text();
+    QString pass=ui->le_pass->text();
     QString passTmp=pass;
     //1.信息正确定验证
     //验证电话

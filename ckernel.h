@@ -16,8 +16,6 @@ class CKernel;
 typedef void (CKernel::*PFUN)(uint from,char* data,int len);
 
 
-
-
 //#define USE_SERVER 1
 class INetMediator;
 class CKernel : public QObject
@@ -47,7 +45,7 @@ private slots:
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
-
+    void slot_dealRegisterRs(uint from,char* data,int len);
     void slot_dealLoginRs(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
