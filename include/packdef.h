@@ -71,6 +71,7 @@
 #define login_success		(2)
 
 
+
 typedef int PackType;
 
 //协议结构

@@ -23,7 +23,8 @@ int CMysql::SelectMysql(char* szSql,int nColumn,list<string>& lst)
 
     if(mysql_query(conn,szSql)) {  // 查询SQL是否合法
         pthread_mutex_unlock(&m_lock );  // 查询失败，解锁并返回FALSE
-        return FALSE;  
+        std::cout << "select fail: " << " error: " << mysql_error(conn)<< std::endl;
+        return FALSE;
     }
     results = mysql_store_result(conn);  // 将结果放在result中
     pthread_mutex_unlock(&m_lock );   // 解锁
