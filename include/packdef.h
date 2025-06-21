@@ -127,8 +127,42 @@ typedef struct STRU_LOGIN_RS
     PackType type;
     int result;
     int userid;
-
+    char name[_MAX_SIZE];
 }STRU_LOGIN_RS;
+
+typedef struct STRU_USERINFO{
+    STRU_USERINFO(){
+        memset(name,0,_MAX_SIZE);
+    }
+    int userid;
+    int clientfd;
+    char name[_MAX_SIZE];
+}STRU_USERINFO;
+
+////////////////////文件信息/////////////////
+struct FileInfo
+{
+
+    FileInfo():fid(0) , size(0),fileFd( 0 )
+    , pos(0) {
+
+    }
+
+    int fid;//文件id
+    std::string name;//文件名
+    std::string dir;//网盘路径
+    std::string time;//时间戳
+    int size;//文件大小 32位 文件最大2GB
+    std::string md5;
+    std::string type;//文件类型
+    std::string absolutePath;//文件的本地绝对路径
+
+    int pos; //上传或下载到什么位置
+    //文件描述符
+    int fileFd;
+};
+
+
 
 
 

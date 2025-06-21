@@ -32,6 +32,7 @@ private:
     TcpKernel* m_pKernel;
     CMysql * m_sql;
     Block_Epoll_Net * m_tcp;
+    MyMap<int,STRU_USERINFO*> m_mapIdToUserinfo;
 };
 
 #endif // CLOGIC_H

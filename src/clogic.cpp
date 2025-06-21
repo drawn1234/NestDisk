@@ -78,9 +78,9 @@ void CLogic::LoginRq(sock_fd clientfd ,char* szbuf,int nlen)
     STRU_LOGIN_RS rs;
     //2. 判断
     char sql[_DEF_CONTENT_SIZE]="";
-    sprintf(sql,"select u_password,u_id from t_user where u_tel='%s'",rq->tel);
+    sprintf(sql,"select u_password,u_id,u_name from t_user where u_tel='%s'",rq->tel);
     list<string> lststr;
-    bool res=m_sql->SelectMysql(sql,2,lststr);
+    bool res=m_sql->SelectMysql(sql,3,lststr);
     if(!res){
         std::cout<<"select fail:"<<sql<<std::endl;
     }
@@ -90,6 +90,8 @@ void CLogic::LoginRq(sock_fd clientfd ,char* szbuf,int nlen)
        lststr.pop_front();
        int id=stoi(lststr.front());
        lststr.pop_front();
+       string name=lststr.front();
+       lststr.pop_front();
        if(rq->password!=pass){
            rs.result=password_error;
            SendData(clientfd,(char*)&rs,sizeof(rs));
@@ -97,6 +99,20 @@ void CLogic::LoginRq(sock_fd clientfd ,char* szbuf,int nlen)
        }else{
            rs.result=login_success;
            rs.userid=id;
+           strcpy(rs.name,name.c_str());
+
+           //将用户信息存入映射表
+           STRU_USERINFO* info=nullptr;
+           if(!m_mapIdToUserinfo.find(id,info)){
+                info=new STRU_USERINFO;
+           }else{
+               //考虑将用户下线
+           }
+           strcpy(info->name,name.c_str());
+           info->userid=id;
+           info->clientfd=clientfd;
+
+           m_mapIdToUserinfo.insert(id,info);
        }
     }else{
         rs.result=user_not_exist;
