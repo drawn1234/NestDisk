@@ -1,8 +1,10 @@
 #ifndef CLOGIC_H
 #define CLOGIC_H
 
+//#define _DEF_NUMBER 1000000000UL
+//宏定义添加UL 避免截断
 #include"TCPKernel.h"
-
+#include "packdef.h"
 class CLogic
 {
 public:
@@ -15,6 +17,8 @@ public:
 public:
     //设置协议映射
     void setNetPackMap();
+    //计算参数
+    long number();
     /************** 发送数据*********************/
     void SendData( sock_fd clientfd, char*szbuf, int nlen )
     {
@@ -25,6 +29,10 @@ public:
     void RegisterRq(sock_fd clientfd, char*szbuf, int nlen);
     //登录
     void LoginRq(sock_fd clientfd, char*szbuf, int nlen);
+    //上传文件
+    void uploadFile(sock_fd clientfd, char*szbuf, int nlen);
+    //文件块请求
+    void fileContentRq(sock_fd clientfd, char*szbuf, int nlen);
 
     /*******************************************/
 
@@ -33,6 +41,7 @@ private:
     CMysql * m_sql;
     Block_Epoll_Net * m_tcp;
     MyMap<int,STRU_USERINFO*> m_mapIdToUserinfo;
+    MyMap<int,FileInfo*> m_mapTimstampToFileinfo;
 };
 
 #endif // CLOGIC_H
