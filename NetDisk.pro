@@ -20,12 +20,15 @@ SOURCES += \
     ckernel.cpp \
     logindialog.cpp \
     main.cpp \
-    maindialog.cpp
+    maindialog.cpp \
+    mytablewigetitem.cpp
 
 HEADERS += \
     ckernel.h \
+    common.h \
     logindialog.h \
-    maindialog.h
+    maindialog.h \
+    mytablewigetitem.h
 
 FORMS += \
     logindialog.ui \

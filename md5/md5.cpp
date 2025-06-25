@@ -1,5 +1,8 @@
 
 #include "md5.h"
+#include "qdebug.h"
+#include "qglobal.h"
+#include <errhandlingapi.h>
 #include <minwindef.h>
 
 using namespace std;
@@ -113,7 +116,7 @@ void MD5::reset() {
   
 /* Updating the context with a input buffer. */
 void MD5::update(const void *input, size_t length) {
-    update((const std::byte*)input, length);
+    update((const BYTE*)input, length);
 }  
 
 /* Updating the context with a string. */  

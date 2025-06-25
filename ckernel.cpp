@@ -2,10 +2,16 @@
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QSettings>
+#include <errhandlingapi.h>
 #include "md5.h"
+
 //定义带参数宏计算协议数
 #define NetMap(a) m_netPackMap[a-_DEF_PACK_BASE]
+//工具函数声明
 static std::string getMD5(QString val);
+static std::string getFileMd5(QString path);
+void Utf8ToGB2312( char* gbbuf , int nlen ,QString& utf8);
+QString GB2312ToUtf8( char* gbbuf );
 CKernel::CKernel(QObject *parent)
     : QObject{parent}
 {
@@ -34,7 +40,11 @@ CKernel::CKernel(QObject *parent)
     //创建窗口对象
     m_pMainDialog=new MainDialog;
      connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
+    connect(m_pMainDialog,SIGNAL(sig_uploadFile(QString,QString)),
+            this,SLOT(slot_uploadFile(QString,QString)));
 
+     connect(this,SIGNAL(sig_updateFileProgress(int,int)),
+             m_pMainDialog,SLOT(slot_updateFileProgress(int,int)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -138,6 +148,52 @@ void CKernel::slot_loginCommit(QString tel, QString pass)
 
 }
 
+#include <QFileInfo>
+#include <QDateTime>
+void CKernel::slot_uploadFile(QString path, QString dir)
+{
+    qDebug()<<__func__;
+    //1. 存储上传文件信息
+    QFileInfo qFile(path);
+    FileInfo file;
+    file.absolutePath=path;
+    file.dir=dir;
+    file.md5=QString::fromStdString(getFileMd5(path));
+    file.name=qFile.fileName();
+    file.size=qFile.size();
+    file.time=QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+    file.type="file";
+    char buf[1000]="";
+    Utf8ToGB2312(buf,sizeof(buf),path);
+    FILE* pFile=fopen(buf,"rb");
+    if(!pFile){
+        qDebug()<<"打开文件失败";
+        return;
+    }
+    file.pFile=pFile;
+    //2. 上传文件信息保留到map
+    int timeStamp=QDateTime::currentDateTime().toString("hhmmsszzz").toInt();
+    file.timestamp=timeStamp;
+    m_mapTimeToFileinfo[timeStamp]=file;
+    //3. 发送上传文件请求给服务器
+    STRU_UPLOAD_FILE_RQ rq;
+
+    //需要进行中文兼容转码，将数据转换为string，拷贝进char[]
+    string strName=file.name.toStdString();
+    string strdir=file.dir.toStdString();
+    string strtype=file.type.toStdString();
+    strcpy(rq.fileName,strName.c_str());
+    strcpy(rq.dir,strdir.c_str());
+    strcpy(rq.fileType,strtype.c_str());
+    strcpy(rq.time,file.time.toStdString().c_str());
+    strcpy( rq.md5,file.md5.toStdString().c_str());
+    rq.size=file.size;
+    rq.timestamp=timeStamp;
+    rq.userid=m_id;
+    //4. 发送上传文件请求给服务器
+    sendData((char*)&rq,sizeof(rq));
+}
+
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {
     qDebug()<<__func__;
@@ -202,8 +258,78 @@ void CKernel::slot_dealLoginRs(uint from, char *data, int len)
     case login_success:
         m_pLoginDialog->close();
         m_pMainDialog->show();
+        m_id=rs->userid;
+        m_name=rs->name;
+        //获取根目录下文件列表
         break;
     }
+}
+
+void CKernel::slot_dealUploadFileRs(uint from, char *data, int len)
+{
+    qDebug()<<__func__;
+    //处理上传文件回复
+    //1. 拆包
+    STRU_UPLOAD_FILE_RS* rs=(STRU_UPLOAD_FILE_RS*)data;
+    //2. 判断结果
+    if(rs->result==false){
+        qDebug()<<"上传文件失败";
+    }
+    //3. 获取文件信息
+    if( m_mapTimeToFileinfo.count(rs->timestamp)==0){
+        qDebug()<<"没有对应文件信息";
+        return;
+    }
+     FileInfo& file=m_mapTimeToFileinfo[rs->timestamp];
+    //4. 重新设置fid值
+     file.fileid=rs->fileid;
+    //5.加载上传信息到上传控件 TODO:
+     m_pMainDialog->slot_insertUploadFile(file);
+    //6.发送文件块请求
+     STRU_FILE_CONTENT_RQ rq;
+     rq.fileid=rs->fileid;
+     rq.timestamp=rs->timestamp;
+     rq.userid=m_id;
+     rq.len=fread(rq.content,1,_DEF_BUFFER,file.pFile);
+     sendData((char*)&rq,sizeof(rq));
+}
+
+void CKernel::slot_dealContentFileRs(uint from, char *data, int len)
+{
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_FILE_CONTENT_RS* rs=(STRU_FILE_CONTENT_RS*)data;
+    STRU_FILE_CONTENT_RQ rq;
+    //2.查看结果
+    FileInfo& file=m_mapTimeToFileinfo[rs->timestamp];
+    if(m_mapTimeToFileinfo.count(rs->timestamp)==0){
+        qDebug()<<"没有对应文件信息";
+        return;
+    }
+    if(rs->result==false){
+        //跳回原位置
+        fseek(file.pFile,-1*rs->len,SEEK_CUR);
+    }else{
+        //3.更新文件信息
+        file.pos+=rs->len;
+        //更新上传进度
+        //方法1：信号槽控制-多线程
+        //方法2：直接调用 一定是当前函数在主线程
+        Q_EMIT sig_updateFileProgress(file.timestamp,file.pos);//时间戳判断文件信息
+        //判断是否结束
+        if(file.pos>=file.size){
+            //关闭文件
+            fclose(file.pFile);
+            m_mapTimeToFileinfo.erase(rs->timestamp);
+            return;
+        }
+    }
+    //4.发送文件块请求
+    rq.fileid=rs->fileid;
+    rq.timestamp=rs->timestamp;
+    rq.userid=rs->userid;
+    rq.len=fread(rq.content,1,_DEF_BUFFER,file.pFile);
+    sendData((char*)&rq,sizeof(rq));
 }
 
 
@@ -220,6 +346,32 @@ void CKernel::setNetPackMap()
     //通过协议头找到对应处理函数
     NetMap(_DEF_PACK_LOGIN_RS)=&CKernel::slot_dealLoginRs;
     NetMap(_DEF_PACK_REGISTER_RS)=&CKernel::slot_dealRegisterRs;
+    NetMap(_DEF_PACK_UPLOAD_FILE_RS)=&CKernel::slot_dealUploadFileRs;
+    NetMap(_DEF_PACK_FILE_CONTENT_RS)=&CKernel::slot_dealContentFileRs;
+
+}
+
+#include<QTextCodec>
+
+// QString -> char* gb2312
+void Utf8ToGB2312( char* gbbuf , int nlen ,QString& utf8)
+{
+    qDebug()<<__func__;
+    //转码的对象
+    QTextCodec * gb2312code = QTextCodec::codecForName( "gb2312");
+    //QByteArray char 类型数组的封装类 里面有很多关于转码 和 写IO的操作
+    QByteArray ba = gb2312code->fromUnicode( utf8 );// Unicode -> 转码对象的字符集
+
+    strcpy_s ( gbbuf , nlen , ba.data() );
+}
+
+// char* gb2312 --> QString utf8
+QString GB2312ToUtf8( char* gbbuf )
+{
+    //转码的对象
+    QTextCodec * gb2312code = QTextCodec::codecForName( "gb2312");
+    //QByteArray char 类型数组的封装类 里面有很多关于转码 和 写IO的操作
+    return gb2312code->toUnicode( gbbuf );// 转码对象的字符集 -> Unicode
 }
 
 #define MD5_KEY "1234"
@@ -232,9 +384,36 @@ static std::string getMD5(QString val){
     QString str=QString("%1_%2").arg(val).arg(MD5_KEY);
     MD5 md5(str.toStdString().c_str());
     qDebug()<<str<<"对应MD5"<<md5.toString().c_str();
+    string a="111";
+    QString b=QString::fromStdString(a);
+    a=b.toStdString();
     return md5.toString();
 }
 
+static std::string getFileMd5(QString path){
+    qDebug()<<__func__;
+    //1.path转码为ANSI
+    char buf[1000]="";
+    Utf8ToGB2312(buf,sizeof(buf),path);
+    //2.打开文件
+    FILE* pFile=fopen(buf,"rb");//二进制只读
+    if(!pFile){
+        qDebug()<<"打开文件失败";
+        return string();
+    }
+    //3.循环读取文件，刷新MD5
+    MD5 md;
+    int len=0;
+    do{
+        len=fread(buf,1,1000,pFile);//每次读取1byte 最多读取1000次
+        //if(len<=0)qDebug()<<"读取文件失败";
+        md.update(buf,len);
+    }while(len>0);
+    int err=fclose(pFile);
+    //4.返回MD5值
+    qDebug()<<"文件MD5:"<<md.toString();
+    return md.toString();
+}
 void CKernel::sendData(char* buf,int len)
 {
     qDebug()<<__func__;

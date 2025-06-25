@@ -2,8 +2,7 @@
 
 
 #include"INetMediator.h"
-
-
+#include <iostream>
 
 TcpClient::TcpClient( INetMediator * pMediator ):m_sock( INVALID_SOCKET ),m_isStop(false)
 {
@@ -59,6 +58,7 @@ bool TcpClient::InitNet(const char *szBufIP, unsigned short port)
 	
 	if( connect( m_sock ,(const sockaddr* ) &addr , sizeof(addr) ) == SOCKET_ERROR )
 	{
+       // std::cout<<WSAGetLastError()<<std::endl;
 		UnInitNet();
         return false;
 	}

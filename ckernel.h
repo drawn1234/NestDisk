@@ -9,7 +9,7 @@
 #include <QMessageBox>
 #include<packdef.h>
 #include"logindialog.h"
-
+#include "common.h"
 //协议映射表
 //类成员函数指针
 class CKernel;
@@ -28,7 +28,7 @@ private:
     ~CKernel();
     void loadIniFile();
 signals:
-
+    void sig_updateFileProgress(int timestamp,int pos);
 public:
     //获取对象的静态方法-全局创建/堆区创建
     static CKernel* GetInstance(){
@@ -42,11 +42,15 @@ private slots:
     void slot_closeMainDialog();
     void slot_registerCommit(QString tel,QString pass,QString name);
     void slot_loginCommit(QString tel,QString pass);
+    void slot_uploadFile(QString path,QString dir);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
     void slot_dealRegisterRs(uint from,char* data,int len);
     void slot_dealLoginRs(uint from,char* data,int len);
+    void slot_dealUploadFileRs(uint from,char* data,int len);
+    void slot_dealContentFileRs(uint from,char* data,int len);
+
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);
@@ -59,14 +63,21 @@ private:
     MainDialog* m_pMainDialog;
     TcpClientMediator* m_pClient;
     loginDialog* m_pLoginDialog;
+
+
 #ifdef USE_SERVER
     TcpServerMediator* m_pServer;
 #endif
+    //网络配置
     QString m_ip;
     QString m_port;
-
+    //用户信息
+    QString m_name;
+    int m_id;
     //协议处理函数数组
     PFUN m_netPackMap[_DEF_PACK_COUNT];
+    //时间戳-文件信息 map
+    std::map<int,FileInfo> m_mapTimeToFileinfo;
 };
 
 #endif // CKERNEL_H
