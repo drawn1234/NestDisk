@@ -5,6 +5,7 @@
 #include <QMenu>
 #include "common.h"
 #include"mytablewigetitem.h"
+#include "packdef.h"
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainDialog;
@@ -38,6 +39,7 @@ public slots:
     void slot_insertUploadComplete(FileInfo& file);
     void slot_updateFileProgress(int timestamp,int pos);
     void slot_deleteUploadFileByRow(int row);
+    void slot_insertFileInfo(FileInfo& file);
 private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;

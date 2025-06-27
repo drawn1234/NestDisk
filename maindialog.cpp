@@ -61,19 +61,15 @@ void MainDialog::on_pb_file_clicked()
     ui->sw_page->setCurrentIndex(0);
 }
 
-
 void MainDialog::on_pb_trans_clicked()
 {
     ui->sw_page->setCurrentIndex(1);
 }
 
-
 void MainDialog::on_pb_share_clicked()
 {
      ui->sw_page->setCurrentIndex(2);
 }
-
-
 
 void MainDialog::on_pb_add_clicked()
 {
@@ -101,8 +97,6 @@ void MainDialog::slot_action_uploadFile(bool flag)
     QString dir=ui->lb_path->text();
     Q_EMIT sig_uploadFile(path,dir);
 }
-
-
 
 void MainDialog::slot_action_uploadFolder(bool flag)
 {
@@ -197,5 +191,21 @@ void MainDialog::slot_updateFileProgress(int timestamp, int pos)
 void MainDialog::slot_deleteUploadFileByRow(int row)
 {
     //删除uploadfile中行
+}
+
+void MainDialog::slot_insertFileInfo(FileInfo& file)
+{
+    qDebug()<<__func__;
+    //1.插入行
+    int rows=ui->tb_file->rowCount();
+    ui->tb_file->setRowCount(rows+1);
+    //2. 插入行数据
+    MytablewigetItem* item0=new MytablewigetItem;
+    QTableWidgetItem* item1=new QTableWidgetItem(file.time);
+    QTableWidgetItem* item2=new QTableWidgetItem(QString::number(file.size));
+    item0->slot_setFile(file);
+    ui->tb_file->setItem(rows,0,item0);
+    ui->tb_file->setItem(rows,1,item1);
+    ui->tb_file->setItem(rows,2,item2);
 }
 

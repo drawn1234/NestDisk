@@ -44,3 +44,6 @@ RESOURCES += \
 
 DISTFILES += \
     md5/md5.pri
+
+SUBDIRS += \
+    ../Test/Test.pro

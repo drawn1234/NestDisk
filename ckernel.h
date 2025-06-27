@@ -29,6 +29,7 @@ private:
     void loadIniFile();
 signals:
     void sig_updateFileProgress(int timestamp,int pos);
+    void sig_insertFileInfo(FileInfo& file);
 public:
     //获取对象的静态方法-全局创建/堆区创建
     static CKernel* GetInstance(){
@@ -43,6 +44,7 @@ private slots:
     void slot_registerCommit(QString tel,QString pass,QString name);
     void slot_loginCommit(QString tel,QString pass);
     void slot_uploadFile(QString path,QString dir);
+    void slot_getCurFileList(QString dir);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
@@ -50,7 +52,7 @@ private slots:
     void slot_dealLoginRs(uint from,char* data,int len);
     void slot_dealUploadFileRs(uint from,char* data,int len);
     void slot_dealContentFileRs(uint from,char* data,int len);
-
+    void slot_dealGetListRs(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);
@@ -74,6 +76,8 @@ private:
     //用户信息
     QString m_name;
     int m_id;
+    //获取文件列表使用目录
+    QString m_curDir;
     //协议处理函数数组
     PFUN m_netPackMap[_DEF_PACK_COUNT];
     //时间戳-文件信息 map

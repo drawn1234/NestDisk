@@ -13,7 +13,7 @@ static std::string getFileMd5(QString path);
 void Utf8ToGB2312( char* gbbuf , int nlen ,QString& utf8);
 QString GB2312ToUtf8( char* gbbuf );
 CKernel::CKernel(QObject *parent)
-    : QObject{parent}
+    : QObject{parent},m_id(0),m_curDir("/")
 {
     //加载配置文件
     m_ip="";
@@ -45,6 +45,8 @@ CKernel::CKernel(QObject *parent)
 
      connect(this,SIGNAL(sig_updateFileProgress(int,int)),
              m_pMainDialog,SLOT(slot_updateFileProgress(int,int)));
+    connect(this,SIGNAL(sig_insertFileInfo(FileInfo&)),
+            m_pMainDialog,SLOT(slot_insertFileInfo(FileInfo&)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -194,6 +196,19 @@ void CKernel::slot_uploadFile(QString path, QString dir)
     sendData((char*)&rq,sizeof(rq));
 }
 
+void CKernel::slot_getCurFileList(QString dir)
+{
+    //获取当前文件列表
+    //1.获取文件列表请求
+    STRU_GET_FILE_RQ rq;
+    rq.userid=m_id;
+    //2. 兼容中文
+    std::string stddir=m_curDir.toStdString();
+    strcpy(rq.dir,stddir.c_str());
+    //3. 发送请求
+    sendData((char*)&rq,sizeof(rq));
+}
+
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {
     qDebug()<<__func__;
@@ -261,6 +276,8 @@ void CKernel::slot_dealLoginRs(uint from, char *data, int len)
         m_id=rs->userid;
         m_name=rs->name;
         //获取根目录下文件列表
+        m_curDir="/";
+        slot_getCurFileList(m_curDir);
         break;
     }
 }
@@ -332,6 +349,27 @@ void CKernel::slot_dealContentFileRs(uint from, char *data, int len)
     sendData((char*)&rq,sizeof(rq));
 }
 
+void CKernel::slot_dealGetListRs(uint from, char *data, int len)
+{
+    qDebug()<<__func__;
+    //处理获取文件列表回复
+    //1. 拆包
+    STRU_GET_FILE_RS* rs=(STRU_GET_FILE_RS*)data;
+    if(m_curDir!=QString::fromStdString(rs->dir))return;
+    //2. 处理每个列表文件数据
+    FileInfo file;
+    for(int i=0;i<rs->count;i++){
+        file.type=rs->fileInfo[i].fileType;
+        file.name=rs->fileInfo[i].name;
+        file.size=rs->fileInfo[i].size;
+        file.time=rs->fileInfo[i].time;
+        file.fileid=rs->fileInfo[i].fileid;
+        //3. 插入文件列表
+        //发送信号通知界面类处理
+        Q_EMIT sig_insertFileInfo(file);
+    }
+}
+
 
 
 
@@ -348,6 +386,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_REGISTER_RS)=&CKernel::slot_dealRegisterRs;
     NetMap(_DEF_PACK_UPLOAD_FILE_RS)=&CKernel::slot_dealUploadFileRs;
     NetMap(_DEF_PACK_FILE_CONTENT_RS)=&CKernel::slot_dealContentFileRs;
+    NetMap(_DEF_PACK_FILE_LIST_RS)=&CKernel::slot_dealGetListRs;
 
 }
 
