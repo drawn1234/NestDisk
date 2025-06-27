@@ -33,7 +33,8 @@ public:
     void uploadFile(sock_fd clientfd, char*szbuf, int nlen);
     //文件块请求
     void fileContentRq(sock_fd clientfd, char*szbuf, int nlen);
-
+    //获取文件列表
+    void getFileList(sock_fd clientfd, char*szbuf, int nlen);
     /*******************************************/
 
 private:

@@ -245,6 +245,54 @@ struct STRU_FILE_CONTENT_RS
 
 
 
+////////////////文件列表/////////////////////
+//文件内容请求
+#define _DEF_PACK_FILE_LIST_RQ       (_DEF_PACK_BASE + 8 )
+//文件内容回复
+#define _DEF_PACK_FILE_LIST_RS       (_DEF_PACK_BASE + 9 )
+//文件信息
+struct STRU_FILE_INFO{
+    STRU_FILE_INFO():size(0){
+        memset(name,0,sizeof(name));
+        memset(time,0,sizeof(time));
+        memset(fileType,0,sizeof(fileType));
+    }
+    int fileid;
+    char name[_MAX_PATH_SIZE];
+    char time[_MAX_SIZE];
+    int size;
+    char fileType[_MAX_SIZE];
+};
+//获取文件请求
+struct STRU_GET_FILE_RQ{
+    STRU_GET_FILE_RQ():type(_DEF_PACK_FILE_LIST_RQ){
+        memset(dir,0,sizeof(dir));
+    }
+    PackType type;
+    int userid;
+    char dir[_MAX_PATH_SIZE];
+};
+//获取文件回复
+struct STRU_GET_FILE_RS{
+    STRU_GET_FILE_RS():type(_DEF_PACK_FILE_LIST_RS),count(0){
+        memset(dir,0,sizeof(dir));
+    }
+    void init(){
+        //malloc不走构造函数，使用函数初始化
+        type=_DEF_PACK_FILE_LIST_RS;
+        count=0;
+        memset(dir,0,sizeof(dir));
+    }
+     PackType type;
+    char dir[_MAX_PATH_SIZE];
+    int count;
+    //文件信息数组
+    STRU_FILE_INFO fileInfo[];//柔性数组
+};
+
+
+
+
 
 
 

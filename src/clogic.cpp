@@ -5,6 +5,7 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_LOGIN_RQ)       = &CLogic::LoginRq;
     NetPackMap(_DEF_PACK_UPLOAD_FILE_RQ) = &CLogic::uploadFile;
     NetPackMap(_DEF_PACK_FILE_CONTENT_RQ) = &CLogic::fileContentRq;
+    NetPackMap(_DEF_PACK_FILE_LIST_RQ) = &CLogic::getFileList;
 
 
 }
@@ -248,4 +249,62 @@ void CLogic::fileContentRq(sock_fd clientfd, char *szbuf, int nlen)
     rs.userid=rq->userid;
     rs.timestamp=rq->timestamp;
     SendData(clientfd,(char*)&rs,sizeof(rs));
+}
+
+//获取文件列表
+void CLogic::getFileList(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1. 拆包
+    STRU_GET_FILE_RQ* rq=(STRU_GET_FILE_RQ*)szbuf;
+    string dir=rq->dir;
+    //2. 根据dir查询
+    char sql[1024]="";
+    sprintf(sql,"select f_name,f_size,f_uploadtime,f_id,f_type from user_file_info where f_dir='%s' and u_id='%d' and f_state=1;",
+            rq->dir,rq->userid);
+    list<string> lststr;
+    bool res=m_sql->SelectMysql(sql,5,lststr);
+    int count=lststr.size()/5;
+    if(!res){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+    if(lststr.size()==0)return;
+    //3.保存文件信息
+     int rslen=sizeof(STRU_GET_FILE_RS)+sizeof(STRU_FILE_INFO)*count;
+    STRU_GET_FILE_RS* rs=(STRU_GET_FILE_RS*)malloc(rslen);
+    rs->init();
+    strcpy(rs->dir,rq->dir);
+    rs->count=count;
+    string name="";
+    int size=0;
+    string time="";
+    int fileid=0;
+    string type="";
+    //也可以使用循环作为条件-while(lststr.size()!=0)
+    for(int i=0;i<rs->count;i++){
+        name=lststr.front();
+        lststr.pop_front();
+        size=stoi(lststr.front());
+        lststr.pop_front();
+        time=lststr.front();
+        lststr.pop_front();
+        fileid=stoi(lststr.front());
+        lststr.pop_front();
+        type=lststr.front();
+        lststr.pop_front();
+
+        strcpy(rs->fileInfo[i].name,name.c_str()) ;
+        rs->fileInfo[i].size=size;
+        strcpy(rs->fileInfo[i].time,time.c_str()) ;
+        rs->fileInfo[i].fileid=fileid;
+        strcpy(rs->fileInfo[i].fileType,type.c_str()) ;
+    }
+
+    //4. 发送回复
+
+    SendData(clientfd,(char*)rs,rslen);
+    free(rs);
+    rs=nullptr;
+
 }
