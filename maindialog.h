@@ -18,6 +18,8 @@ class MainDialog : public QDialog
 signals:
     void sig_close();
     void sig_uploadFile(QString path,QString dir);
+    void sig_downloadFile(int fileid,QString dir);
+    void sig_downloadFolder(int fileid,QString dir);
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();

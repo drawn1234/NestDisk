@@ -254,16 +254,40 @@ void MainDialog::on_tb_file_customContextMenuRequested(const QPoint &pos)
 
 void MainDialog::slot_action_dowloadFile(bool flag)
 {
+    qDebug()<<__func__;
+    //遍历列表
+    int rows=ui->tb_file->rowCount();
+    MytablewigetItem* item0;
+    //获取当前目录
+    QString dir=ui->lb_path->text();
+    QString type="";
+    for(int i=0;i<rows;i++){
+        //看选中的文件项
+        item0=(MytablewigetItem*)ui->tb_file->item(i,0);
+        if(item0->checkState()==Qt::Checked){
+            //列表中有这个文件，不能开始 过滤
+
+            //获取文件类型
+            type=item0->m_file.type;
+            //发信号 下文件/文件夹
+            if(type=="file"){
+                Q_EMIT sig_downloadFile(item0->m_file.fileid,dir);
+            }else if(type=="folder"){
+                Q_EMIT sig_downloadFolder(item0->m_file.fileid,dir);
+            }
+        }
+    }
+
 
 }
 
 void MainDialog::slot_action_shareFile(bool flag)
 {
-
+    qDebug()<<__func__;
 }
 
 void MainDialog::slot_action_deleteFile(bool flag)
 {
-
+    qDebug()<<__func__;
 }
 

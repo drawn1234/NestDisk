@@ -39,14 +39,17 @@ CKernel::CKernel(QObject *parent)
 
     //创建窗口对象
     m_pMainDialog=new MainDialog;
-     connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
+    connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
     connect(m_pMainDialog,SIGNAL(sig_uploadFile(QString,QString)),
             this,SLOT(slot_uploadFile(QString,QString)));
-
-     connect(this,SIGNAL(sig_updateFileProgress(int,int)),
+    connect(this,SIGNAL(sig_updateFileProgress(int,int)),
              m_pMainDialog,SLOT(slot_updateFileProgress(int,int)));
     connect(this,SIGNAL(sig_insertFileInfo(FileInfo&)),
             m_pMainDialog,SLOT(slot_insertFileInfo(FileInfo&)));
+    connect(m_pMainDialog,SIGNAL(sig_downloadFile(int,QString)),
+             this,SLOT(slot_downloadFile(int,QString)));
+    connect(m_pMainDialog,SIGNAL(sig_downloadFolder(int,QString)),
+            this,SLOT(slot_downloadFolder(int,QString)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -174,6 +177,27 @@ void CKernel::slot_getCurFileList(QString dir)
     strcpy(rq.dir,stddir.c_str());
     //3. 发送请求
     sendData((char*)&rq,sizeof(rq));
+}
+
+void CKernel::slot_downloadFile(int fileid, QString dir)
+{
+    //下载文件请求
+    qDebug()<<__func__;
+    //1.下载请求
+    STRU_DOWNLOAD_FILE_RQ rq;
+    rq.fileid=fileid;
+    string dirtmp=dir.toStdString();
+    strcpy(rq.dir,dirtmp.c_str());
+    rq.timestamp=QDateTime::currentDateTime().toString("hhmmsszzz").toInt();
+    rq.userid=m_id;
+    //2.发送请求
+    sendData((char*)&rq,sizeof(rq));
+}
+
+void CKernel::slot_downloadFolder(int fileid, QString dir)
+{
+    //下载文件夹请求
+    qDebug()<<__func__;
 }
 
 
