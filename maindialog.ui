@@ -610,6 +610,9 @@
              </property>
              <item>
               <widget class="QTableWidget" name="tb_file">
+               <property name="contextMenuPolicy">
+                <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+               </property>
                <property name="editTriggers">
                 <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
                </property>

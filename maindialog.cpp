@@ -36,6 +36,29 @@ MainDialog::MainDialog(QWidget *parent)
     connect(action_uploadFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_uploadFile(bool)));
     connect(action_uploadFolder,SIGNAL(triggered(bool)),this,SLOT(slot_action_uploadFolder(bool)));
 
+    //设置文件菜单
+    //1. 定义菜单项
+    QAction* action_downloadFile=new QAction("下载文件");
+    QAction* action_shareFile=new QAction("分享文件");
+    QAction* action_deleteFile=new QAction("删除文件");
+    QAction* action_star=new QAction("收藏");
+
+    //2.添加菜单项
+    m_menuFileInfo.addAction(action_addFolder);
+    m_menuFileInfo.addSeparator();
+    m_menuFileInfo.addAction(action_downloadFile);
+    m_menuFileInfo.addSeparator();
+    m_menuFileInfo.addAction(action_shareFile);
+    m_menuFileInfo.addSeparator();
+    m_menuFileInfo.addAction(action_deleteFile);
+    m_menuFileInfo.addSeparator();
+    m_menuFileInfo.addAction(action_star);
+
+    //3. 绑定菜单项槽函数
+    connect(action_downloadFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_dowloadFile(bool)));
+    connect(action_shareFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_shareFile(bool)));
+    connect(action_deleteFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_deleteFile(bool)));
+
 }
 
 MainDialog::~MainDialog()
@@ -207,5 +230,40 @@ void MainDialog::slot_insertFileInfo(FileInfo& file)
     ui->tb_file->setItem(rows,0,item0);
     ui->tb_file->setItem(rows,1,item1);
     ui->tb_file->setItem(rows,2,item2);
+}
+
+
+void MainDialog::on_tb_file_cellClicked(int row, int column)
+{
+    //选择单元格
+    MytablewigetItem* item0=(MytablewigetItem*)ui->tb_file->item(row,0);
+    if(item0->checkState()==Qt::Checked){
+        item0->setCheckState(Qt::Unchecked);
+    }else{
+        item0->setCheckState(Qt::Checked);
+    }
+}
+
+
+void MainDialog::on_tb_file_customContextMenuRequested(const QPoint &pos)
+{
+    //表格鼠标右键
+    //1. 在鼠标右键位置显示菜单
+    m_menuFileInfo.exec(QCursor::pos());
+}
+
+void MainDialog::slot_action_dowloadFile(bool flag)
+{
+
+}
+
+void MainDialog::slot_action_shareFile(bool flag)
+{
+
+}
+
+void MainDialog::slot_action_deleteFile(bool flag)
+{
+
 }
 

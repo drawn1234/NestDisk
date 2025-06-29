@@ -23,18 +23,24 @@ public:
     ~MainDialog();
     void closeEvent(QCloseEvent* event);
 private slots:
+    //界面交互槽
     void on_pb_file_clicked();
-
     void on_pb_trans_clicked();
-
     void on_pb_share_clicked();
-
+    //下载菜单槽
     void on_pb_add_clicked();
-
     void slot_action_addFolder(bool flag);
     void slot_action_uploadFile(bool flag);
     void slot_action_uploadFolder(bool flag);
+    //复选
+    void on_tb_file_cellClicked(int row, int column);
+    //文件菜单槽
+    void on_tb_file_customContextMenuRequested(const QPoint &pos);
+    void slot_action_dowloadFile(bool flag);
+    void slot_action_shareFile(bool flag);
+    void slot_action_deleteFile(bool flag);
 public slots:
+    //界面控制槽
     void slot_insertUploadFile(FileInfo& file);
     void slot_insertUploadComplete(FileInfo& file);
     void slot_updateFileProgress(int timestamp,int pos);
@@ -43,6 +49,7 @@ public slots:
 private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;
+    QMenu m_menuFileInfo;
 
 };
 #endif // MAINDIALOG_H
