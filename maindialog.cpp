@@ -159,6 +159,40 @@ void MainDialog::slot_insertUploadFile(FileInfo &file)
     ui->tb_upload->setCellWidget(rows,5,button);
 }
 
+void MainDialog::slot_insertDownloadFile(FileInfo &file)
+{
+    //插入下载文件
+    qDebug()<<__func__;
+    //表格插入文件信息-行信息
+    //列：文件 时间 大小 速率 进度 按钮
+    //1. 新增一行 获取当前行+1 设置行数
+    int rows=ui->tb_download->rowCount();
+    ui->tb_download->setRowCount(rows+1);
+    //2. 设置这一行的每一列的控件（添加对象）
+    MytablewigetItem *item0=new MytablewigetItem;//表格对象需要创建在堆区，避免函数结束自动回收
+    item0->slot_setFile(file);
+    QTableWidgetItem *item1=new QTableWidgetItem(file.time);
+    QTableWidgetItem *item2=new QTableWidgetItem(file.getSize(file.size));
+    QTableWidgetItem *item3=new QTableWidgetItem("0 KM/S");
+    ui->tb_download->setItem(rows,0,item0);
+    ui->tb_download->setItem(rows,1,item1);
+    ui->tb_download->setItem(rows,2,item2);
+    ui->tb_download->setItem(rows,3,item3);
+    //添加进度条
+    QProgressBar *item4=new QProgressBar;
+    item4->setMaximum(file.size);//设置最大值-进度条会自动换算
+    ui->tb_download->setCellWidget(rows,4,item4);
+
+    //设置按钮
+    QPushButton *button=new QPushButton;
+    if(file.isPause){
+        button->setText("开始");
+    }else{
+        button->setText("暂停");
+    }
+    ui->tb_download->setCellWidget(rows,5,button);
+}
+
 void MainDialog::slot_insertUploadComplete(FileInfo &file)
 {
     //回收文件或者文件上传结束使用

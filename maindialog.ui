@@ -398,7 +398,7 @@
       <item>
        <widget class="QStackedWidget" name="sw_page">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="page_file">
          <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -684,7 +684,7 @@
              </font>
             </property>
             <property name="currentIndex">
-             <number>2</number>
+             <number>1</number>
             </property>
             <widget class="QWidget" name="wd_upload">
              <attribute name="title">
@@ -813,6 +813,21 @@
                 <column>
                  <property name="text">
                   <string>大小</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>速率</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>进度</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string/>
                  </property>
                 </column>
                </widget>

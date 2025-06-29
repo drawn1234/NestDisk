@@ -44,6 +44,7 @@ private slots:
 public slots:
     //界面控制槽
     void slot_insertUploadFile(FileInfo& file);
+    void slot_insertDownloadFile(FileInfo& file);
     void slot_insertUploadComplete(FileInfo& file);
     void slot_updateFileProgress(int timestamp,int pos);
     void slot_deleteUploadFileByRow(int row);

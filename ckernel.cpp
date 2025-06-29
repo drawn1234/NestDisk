@@ -363,6 +363,48 @@ void CKernel::slot_dealGetListRs(uint from, char *data, int len)
     }
 }
 
+void CKernel::slot_dealFileHeadRq(uint from, char *data, int len)
+{
+    //处理文件头请求
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_FILE_HEADER_RQ* rq=(STRU_FILE_HEADER_RQ*)data;
+    STRU_FILE_HEADER_RS rs;
+    //2.保存文件信息
+    FileInfo file;
+    file.fileid=rq->fileid;
+    file.name=rq->fileName;
+    file.type=rq->fileType;
+    file.dir=rq->dir;
+    file.md5=rq->md5;
+    file.size=rq->size;
+    file.timestamp=rq->timestamp;
+    file.time=QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+    //默认路径 sysPath（不含最后的"/"）+dir+name
+    file.absolutePath=QString("%1%2%3").arg(m_sysPath).arg(rq->dir).arg(rq->fileName);
+    //dir 可能有多层，需要循环创建目录 TODO:
+
+
+    //3.打开文件-二进制文本形式打开
+    char pathbuf[1000]="";
+    Utf8ToGB2312(pathbuf,1000,file.absolutePath);
+    file.pFile=fopen(pathbuf,"wb");
+    if(!file.pFile){
+        qDebug()<<"打开文件失败";
+        return;
+    }
+    //保存下载信息到空间 TODO:
+    m_pMainDialog->slot_insertDownloadFile(file);
+    //4.保存到map
+    m_mapTimeToFileinfo[rq->timestamp]=file;
+    //5.发送文件头回复
+    rs.fileid=rq->fileid;
+    rs.timestamp=rq->timestamp;
+    rs.userid=m_id;
+    rs.result=1;
+    sendData((char*)&rs,sizeof(rs));
+}
+
 
 //工具函数------------------------------------------------------------------------
 
@@ -413,6 +455,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_UPLOAD_FILE_RS)=&CKernel::slot_dealUploadFileRs;
     NetMap(_DEF_PACK_FILE_CONTENT_RS)=&CKernel::slot_dealContentFileRs;
     NetMap(_DEF_PACK_FILE_LIST_RS)=&CKernel::slot_dealGetListRs;
+    NetMap(_DEF_PACK_FILE_HEADER_RQ)=&CKernel::slot_dealFileHeadRq;
 
 }
 
@@ -484,6 +527,22 @@ void CKernel::sendData(char* buf,int len)
     qDebug()<<__func__;
     //发送消息
     m_pClient->SendData(0,buf,len);
+}
+
+//系统路径组成：exe统计 ./NetDisk
+#include <QDir>
+#include <QCoreApplication>
+void CKernel::setSystemPtah()
+{
+    //设置系统路径
+    QString path=QCoreApplication::applicationDirPath()+"/NetDisk";
+    QDir dir;
+    //没有文件夹 创建
+    if(!dir.exists(path)){
+        dir.mkdir(path);
+    }
+    //默认路径
+    m_sysPath=path;
 }
 
 #ifdef USE_SERVER

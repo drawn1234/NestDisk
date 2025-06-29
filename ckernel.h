@@ -55,6 +55,7 @@ private slots:
     void slot_dealUploadFileRs(uint from,char* data,int len);
     void slot_dealContentFileRs(uint from,char* data,int len);
     void slot_dealGetListRs(uint from,char* data,int len);
+    void slot_dealFileHeadRq(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);
@@ -64,6 +65,7 @@ private:
     void loadIniFile();
     void setNetPackMap();
     void sendData(char* buf,int len);
+    void setSystemPtah();
 private:
     MainDialog* m_pMainDialog;
     TcpClientMediator* m_pClient;
@@ -81,6 +83,8 @@ private:
     int m_id;
     //获取文件列表使用目录
     QString m_curDir;
+    //默认的下载路径-NetDisk exe同级
+    QString m_sysPath;
     //协议处理函数数组
     PFUN m_netPackMap[_DEF_PACK_COUNT];
     //时间戳-文件信息 map
