@@ -115,7 +115,7 @@ void MainDialog::slot_insertUploadFile(FileInfo &file)
     MytablewigetItem *item0=new MytablewigetItem;//表格对象需要创建在堆区，避免函数结束自动回收
     item0->slot_setFile(file);
     QTableWidgetItem *item1=new QTableWidgetItem(file.time);
-    QTableWidgetItem *item2=new QTableWidgetItem(QString::number(file.size));
+    QTableWidgetItem *item2=new QTableWidgetItem(file.getSize(file.size));
     QTableWidgetItem *item3=new QTableWidgetItem("0 KM/S");
     ui->tb_upload->setItem(rows,0,item0);
     ui->tb_upload->setItem(rows,1,item1);
@@ -150,7 +150,7 @@ void MainDialog::slot_insertUploadComplete(FileInfo &file)
     MytablewigetItem *item0=new MytablewigetItem;//表格对象需要创建在堆区，避免函数结束自动回收
     item0->slot_setFile(file);
     QTableWidgetItem *item1=new QTableWidgetItem(file.time);
-    QTableWidgetItem *item2=new QTableWidgetItem(QString::number(file.size));
+    QTableWidgetItem *item2=new QTableWidgetItem(file.getSize(file.size));
     QTableWidgetItem *item3=new QTableWidgetItem("上传完成");
     ui->tb_finished->setItem(rows,0,item0);
     ui->tb_finished->setItem(rows,1,item1);
@@ -202,7 +202,7 @@ void MainDialog::slot_insertFileInfo(FileInfo& file)
     //2. 插入行数据
     MytablewigetItem* item0=new MytablewigetItem;
     QTableWidgetItem* item1=new QTableWidgetItem(file.time);
-    QTableWidgetItem* item2=new QTableWidgetItem(QString::number(file.size));
+    QTableWidgetItem* item2=new QTableWidgetItem(file.getSize(file.size));
     item0->slot_setFile(file);
     ui->tb_file->setItem(rows,0,item0);
     ui->tb_file->setItem(rows,1,item1);

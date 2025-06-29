@@ -69,41 +69,8 @@ CKernel::~CKernel()
 {
 
 }
+//普通槽函数-------------------------------------------------------------------------------------
 
-void CKernel::loadIniFile()
-{
-
-    //加载配置文件
-    qDebug()<<__func__;
-    //获取exe目录
-    QString path= QCoreApplication::applicationDirPath()+"/config.ini";
-    //文件是否存在
-    QFileInfo info(path);
-    if(info.exists()){
-        //存在-加载
-        QSettings setting(path,QSettings::IniFormat);
-        //打开组
-        setting.beginGroup("net");
-        //加载值
-        QVariant strIp= setting.value("ip","");
-        QVariant strPort=setting.value("port","");
-        if(!strIp.toString().isEmpty())m_ip=strIp.toString();
-        if(!strPort.toString().isEmpty())m_port=strPort.toString();
-        //关闭组
-        setting.endGroup();
-    }else{
-        //不存在-创建加载
-        QSettings setting(path,QSettings::IniFormat);//没有就会创建
-        //打开组
-        setting.beginGroup("net");
-        //设置 key value
-        setting.setValue("ip",m_ip);
-        setting.setValue("port",m_port);
-        //关闭组
-        setting.endGroup();
-    }
-    qDebug()<<"ip:"<<m_ip<<"port:"<<m_port;
-}
 
 void CKernel::slot_closeMainDialog()
 {
@@ -209,6 +176,8 @@ void CKernel::slot_getCurFileList(QString dir)
     sendData((char*)&rq,sizeof(rq));
 }
 
+
+//信息处理函数-------------------------------------------------------------------------------
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {
     qDebug()<<__func__;
@@ -371,9 +340,42 @@ void CKernel::slot_dealGetListRs(uint from, char *data, int len)
 }
 
 
+//工具函数------------------------------------------------------------------------
 
+void CKernel::loadIniFile()
+{
+    //加载配置文件
+    qDebug()<<__func__;
+    //获取exe目录
+    QString path= QCoreApplication::applicationDirPath()+"/config.ini";
+    //文件是否存在
+    QFileInfo info(path);
+    if(info.exists()){
+        //存在-加载
+        QSettings setting(path,QSettings::IniFormat);
+        //打开组
+        setting.beginGroup("net");
+        //加载值
+        QVariant strIp= setting.value("ip","");
+        QVariant strPort=setting.value("port","");
+        if(!strIp.toString().isEmpty())m_ip=strIp.toString();
+        if(!strPort.toString().isEmpty())m_port=strPort.toString();
+        //关闭组
+        setting.endGroup();
+    }else{
+        //不存在-创建加载
+        QSettings setting(path,QSettings::IniFormat);//没有就会创建
+        //打开组
+        setting.beginGroup("net");
+        //设置 key value
+        setting.setValue("ip",m_ip);
+        setting.setValue("port",m_port);
+        //关闭组
+        setting.endGroup();
+    }
+    qDebug()<<"ip:"<<m_ip<<"port:"<<m_port;
+}
 
-//绑定协议处理函数
 void CKernel::setNetPackMap()
 {
     qDebug()<<__func__;

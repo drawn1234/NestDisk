@@ -610,6 +610,15 @@
              </property>
              <item>
               <widget class="QTableWidget" name="tb_file">
+               <property name="editTriggers">
+                <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+               </property>
+               <property name="dragEnabled">
+                <bool>true</bool>
+               </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+               </property>
                <attribute name="horizontalHeaderDefaultSectionSize">
                 <number>170</number>
                </attribute>
@@ -672,7 +681,7 @@
              </font>
             </property>
             <property name="currentIndex">
-             <number>0</number>
+             <number>2</number>
             </property>
             <widget class="QWidget" name="wd_upload">
              <attribute name="title">
@@ -696,6 +705,15 @@
               </property>
               <item>
                <widget class="QTableWidget" name="tb_upload">
+                <property name="editTriggers">
+                 <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+                </property>
+                <property name="dragEnabled">
+                 <bool>true</bool>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+                </property>
                 <attribute name="horizontalHeaderDefaultSectionSize">
                  <number>85</number>
                 </attribute>
@@ -761,6 +779,15 @@
               </property>
               <item>
                <widget class="QTableWidget" name="tb_download">
+                <property name="editTriggers">
+                 <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+                </property>
+                <property name="dragEnabled">
+                 <bool>true</bool>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+                </property>
                 <attribute name="horizontalHeaderDefaultSectionSize">
                  <number>170</number>
                 </attribute>
@@ -811,6 +838,15 @@
               </property>
               <item>
                <widget class="QTableWidget" name="tb_finished">
+                <property name="editTriggers">
+                 <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+                </property>
+                <property name="dragEnabled">
+                 <bool>true</bool>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+                </property>
                 <attribute name="horizontalHeaderDefaultSectionSize">
                  <number>170</number>
                 </attribute>
@@ -904,6 +940,15 @@
               </property>
               <item>
                <widget class="QTableWidget" name="td_share">
+                <property name="editTriggers">
+                 <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+                </property>
+                <property name="dragEnabled">
+                 <bool>true</bool>
+                </property>
+                <property name="selectionBehavior">
+                 <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+                </property>
                 <attribute name="horizontalHeaderDefaultSectionSize">
                  <number>170</number>
                 </attribute>

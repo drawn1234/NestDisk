@@ -27,6 +27,35 @@ struct FileInfo
 
     //文件指针
     FILE* pFile;
+    //最大 2G 1024(kb)*1024(mb)*1024(Gb)*2
+    static QString getSize(int size){
+        QString res;
+        int count=0;
+        int tmp=size;
+        while(tmp!=0){
+            tmp/=1024;
+            if(tmp!=0)count++;
+        }
+        switch(count){
+        case 0:
+            res=QString("0.%1KB").arg((int)(size%1024/1024.0*100),2,10,QChar('0'));
+            //arg() 参数，宽度 进制 不够宽度填充字符
+            break;
+        case 1:
+            res=QString("%1.%2KB").arg(size/1024).arg((int)(size%1024/1024.0*100),2,10,QChar('0'));
+            break;
+        case 2:
+            res=QString("%1.%2MB").arg(size/1024/1024).arg((int)(size/1024%1024/1024.0*100),2,10,QChar('0'));
+            break;
+        case 3:
+            res=QString("%1.%GB").arg(size/1024/1024/1024).arg((int)(size/1024/1024%1024/1024.0*100),2,10,QChar('0'));
+            break;
+        default:
+            res="文件过大，无法显示";
+            break;
+        }
+        return res;
+    }
 };
 
 

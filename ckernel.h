@@ -26,7 +26,7 @@ private:
     //私有拷贝构造
     explicit CKernel(const CKernel & kernel){}
     ~CKernel();
-    void loadIniFile();
+
 signals:
     void sig_updateFileProgress(int timestamp,int pos);
     void sig_insertFileInfo(FileInfo& file);
@@ -59,6 +59,7 @@ private slots:
 #endif
 
 private:
+    void loadIniFile();
     void setNetPackMap();
     void sendData(char* buf,int len);
 private:
