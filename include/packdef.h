@@ -290,6 +290,101 @@ struct STRU_GET_FILE_RS{
     STRU_FILE_INFO fileInfo[];//柔性数组
 };
 
+////////////////////文件下载/////////////////
+//下载文件请求
+#define _DEF_PACK_DOWNLOAD_FILE_RQ			(_DEF_PACK_BASE + 10 )
+
+//下载文件夹请求
+#define _DEF_PACK_DOWNLOAD_FOLDER_RQ		(_DEF_PACK_BASE + 11 )
+
+//下载文件回复
+#define _DEF_PACK_DOWNLOAD_FILE_RS			(_DEF_PACK_BASE + 12 )
+
+//下载文件头请求
+#define _DEF_PACK_FILE_HEADER_RQ			(_DEF_PACK_BASE + 13 )
+
+//下载文件头回复
+#define _DEF_PACK_FILE_HEADER_RS			(_DEF_PACK_BASE + 14 )
+
+
+
+//下载文件请求
+struct STRU_DOWNLOAD_FILE_RQ
+{
+    STRU_DOWNLOAD_FILE_RQ():type(_DEF_PACK_DOWNLOAD_FILE_RQ)
+      ,userid(0),fileid(0),timestamp(0){
+        memset( dir , 0, sizeof(dir) );
+    }
+    PackType type;
+    int timestamp;//时间戳用于区分不同任务
+    int userid; //服务器与时间戳配合,区分不同任务
+    int fileid; //文件id
+    char dir[ _MAX_PATH_SIZE ]; //文件所属目录
+
+};
+
+//下载文件夹请求
+struct STRU_DOWNLOAD_FOLDER_RQ
+{
+    STRU_DOWNLOAD_FOLDER_RQ():type(_DEF_PACK_DOWNLOAD_FOLDER_RQ)
+      ,userid(0),fileid(0),timestamp(0){
+        memset( dir , 0, sizeof(dir) );
+    }
+    PackType type;
+    int timestamp;//时间戳用于区分不同任务
+    int userid; //服务器与时间戳配合,区分不同任务
+    int fileid; //文件id
+    char dir[ _MAX_PATH_SIZE ]; //文件所属目录
+
+};
+
+//下载文件回复 ( 一般也不会出现问题, 所以这个包也不用 )
+struct STRU_DOWNLOAD_FILE_RS
+{
+    STRU_DOWNLOAD_FILE_RS():type(_DEF_PACK_DOWNLOAD_FILE_RS)
+    ,timestamp(0),userid(0),fileid(0),result(1){
+    }
+    PackType type;
+    int timestamp;//时间戳用于区分不同任务
+    int userid; //服务器与时间戳配合,区分不同任务
+    int fileid; //文件id
+    int result; //结果
+};
+
+//文件头请求
+struct STRU_FILE_HEADER_RQ
+{
+    STRU_FILE_HEADER_RQ():type(_DEF_PACK_FILE_HEADER_RQ)
+      ,fileid(0),size(0),timestamp(0){
+        memset( fileName , 0, sizeof(fileName) );
+        memset( dir , 0, sizeof(dir) );
+        memset( md5 , 0, sizeof(md5) );
+        memset( fileType , 0, sizeof(fileType) );
+    }
+    PackType type;
+    int timestamp;
+    int fileid;
+    char fileName[_MAX_PATH_SIZE];
+    int size;//大小
+    char dir[_MAX_PATH_SIZE];//路径
+    char md5[_MAX_SIZE];
+    char fileType[_MAX_SIZE];//文件类型
+};
+
+//文件头回复
+struct STRU_FILE_HEADER_RS
+{
+    STRU_FILE_HEADER_RS(): type(_DEF_PACK_FILE_HEADER_RS)
+      , userid(0), fileid(0),timestamp(0),result(1){
+
+    }
+    PackType type;
+    int fileid;
+    int timestamp;
+    int userid;
+    int result;
+};
+
 
 
 
