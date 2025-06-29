@@ -35,6 +35,10 @@ public:
     void fileContentRq(sock_fd clientfd, char*szbuf, int nlen);
     //获取文件列表
     void getFileList(sock_fd clientfd, char*szbuf, int nlen);
+    //下载文件
+    void downloadFile(sock_fd clientfd, char*szbuf, int nlen);
+    //下载文件夹
+    void downloadFileFolder(sock_fd clientfd, char*szbuf, int nlen);
     /*******************************************/
 
 private:

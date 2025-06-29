@@ -6,7 +6,8 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_UPLOAD_FILE_RQ) = &CLogic::uploadFile;
     NetPackMap(_DEF_PACK_FILE_CONTENT_RQ) = &CLogic::fileContentRq;
     NetPackMap(_DEF_PACK_FILE_LIST_RQ) = &CLogic::getFileList;
-
+    NetPackMap(_DEF_PACK_DOWNLOAD_FILE_RQ) = &CLogic::downloadFile;
+    NetPackMap(_DEF_PACK_DOWNLOAD_FOLDER_RQ) = &CLogic::downloadFileFolder;
 
 }
 
@@ -308,3 +309,79 @@ void CLogic::getFileList(sock_fd clientfd, char *szbuf, int nlen)
     rs=nullptr;
 
 }
+
+//下载文件
+void CLogic::downloadFile(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+   //1.拆包
+    STRU_DOWNLOAD_FILE_RQ* rq=(STRU_DOWNLOAD_FILE_RQ*)szbuf;
+    string dir=rq->dir;
+    int fileid=rq->fileid;
+    int userid=rq->userid;
+    int timestamp=rq->timestamp;
+
+    STRU_FILE_HEADER_RQ rqH;
+    //2.查询数据库 查询文件信息 没有-返回
+    char sql[1024]="";
+    list<string> lststr;
+    sprintf(sql,"select f_name,f_size,f_uploadtime,f_path,f_MD5 from user_file_info where u_id='%d' and f_dir='%s'and f_state=1 and f_id='%d';",
+            userid,dir.c_str(),fileid);
+    int res=m_sql->SelectMysql(sql,5,lststr);
+    if(!res){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+    FileInfo* file=nullptr;
+    if(lststr.size()!=0){
+        //有 保存文件信息
+        file=new FileInfo;
+        string name=lststr.front();
+        lststr.pop_front();
+        int size=stoi(lststr.front());
+        lststr.pop_front();
+        string time=lststr.front();
+        lststr.pop_front();
+        string path=lststr.front();
+        lststr.pop_front();
+        string md5=lststr.front();
+        lststr.pop_front();
+        file->dir=dir;
+        file->md5=md5;
+        file->name=name;
+        file->size=size;
+        file->time=time;
+        file->type="file";
+        file->absolutePath=path;
+        file->fid=fileid;
+        file->fileFd=open(file->absolutePath.c_str(),O_CREAT|O_WRONLY|O_TRUNC,0777);
+        if(file->fileFd<=0){
+            printf("打开文件失败：%s\n",file->absolutePath.c_str());
+            return;
+        }
+        //key值
+        int64_t user_time=userid*number()+timestamp;
+        //存入map
+        m_mapTimstampToFileinfo.insert(user_time,file);
+
+    }else{//没有文件信息-返回
+        //发送文件回复
+        return;
+    }
+    //3. 发送文件头请求
+    strcpy(rqH.dir,dir.c_str());
+    strcpy(rqH.md5,file->md5.c_str());
+    rqH.size=file->size;
+    rqH.fileid=fileid;
+    strcpy(rqH.fileName,file->name.c_str());
+    rqH.timestamp=rq->timestamp;
+    strcpy(rqH.fileType,file->type.c_str());
+    SendData(clientfd,(char*)&rqH,sizeof(rqH));
+}
+//下载文件夹
+void CLogic::downloadFileFolder(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+}
+
+
