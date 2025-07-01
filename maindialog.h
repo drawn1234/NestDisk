@@ -53,6 +53,7 @@ public slots:
     void slot_deleteDownloadFileByRow(int row);
     void slot_insertFileInfo(FileInfo& file);
     void slot_openPath(bool flag);
+    void slot_deleteAllFileInfo();
 private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;

@@ -465,6 +465,23 @@ void CKernel::slot_dealContentFileRq(uint from, char *data, int len)
    sendData((char*)&rs,sizeof(rs));
 }
 
+void CKernel::slot_dealAddFolderRs(uint from, char *data, int len)
+{
+    //处理新建文件夹请求
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_ADD_FOLDER_RS* rs=(STRU_ADD_FOLDER_RS*)data;
+    //2.判断结果
+    if(rs->result==false){
+        QMessageBox::about(m_pMainDialog,"提示","服务器问题，新建文件失败");
+        return;
+    }
+    //3.清空列表
+    m_pMainDialog->slot_deleteAllFileInfo();
+    //4.重新插入列表
+    slot_getCurFileList("/");
+}
+
 
 //工具函数------------------------------------------------------------------------
 
@@ -517,6 +534,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_FILE_LIST_RS)=&CKernel::slot_dealGetListRs;
     NetMap(_DEF_PACK_FILE_HEADER_RQ)=&CKernel::slot_dealFileHeadRq;
     NetMap(_DEF_PACK_FILE_CONTENT_RQ)=&CKernel::slot_dealContentFileRq;
+    NetMap(_DEF_PACK_ADD_FOLDER_RS)=&CKernel::slot_dealAddFolderRs;
 
 }
 

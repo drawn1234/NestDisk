@@ -282,6 +282,26 @@ void MainDialog::slot_openPath(bool flag){
     process.startDetached("explorer",lst);//进程名 参数列表 工作路径
 }
 
+void MainDialog::slot_deleteAllFileInfo()
+{
+    //删除所有的文件项
+    //ui->tb_file->clear();//清空所有文字-行数不变
+    int rows=ui->tb_file->rowCount();
+    QTableWidgetItem* item0;
+    QTableWidgetItem* item1;
+    for(int i=rows-1;i>=0;i--){
+        item0=ui->tb_file->takeItem(i,0);
+        delete item0;
+        item0=nullptr;
+        for(int j=1;j<3;j++){
+            item1=ui->tb_file->takeItem(i,j);
+            delete item1;
+            item1=nullptr;
+        }
+        ui->tb_file->removeRow(i);
+    }
+}
+
 void MainDialog::slot_updateUploadFileProgress(int timestamp, int pos)
 {
     qDebug()<<__func__;
@@ -331,7 +351,7 @@ void MainDialog::slot_updateDownloadFileProgress(int timestamp, int pos)
             if(item4->value()>=item4->maximum()){
                 //是-删除该项-添加到完成
                 slot_insertTbComplete(item0->m_file,"download");
-                slot_deleteUploadFileByRow(i);
+                slot_deleteDownloadFileByRow(i);
                 return;
             }
         }
@@ -341,12 +361,42 @@ void MainDialog::slot_updateDownloadFileProgress(int timestamp, int pos)
 
 void MainDialog::slot_deleteUploadFileByRow(int row)
 {
+    qDebug()<<__func__;
     //删除uploadfile中行
+    QTableWidgetItem *item0;
+    QWidget *item4;
+    for(int i=0;i<=3;i++){
+        item0=ui->tb_upload->takeItem(row,i);
+        delete item0;
+        item0=nullptr;
+    }
+    for(int i=4;i<=5;i++){
+        item4=ui->tb_upload->cellWidget(row,i);
+        delete item4;
+        item4=nullptr;
+    }
+    ui->tb_upload->removeRow(row);
+
 }
 
 void MainDialog::slot_deleteDownloadFileByRow(int row)
 {
-
+    qDebug()<<__func__;
+    //删除下载的行
+    //删除uploadfile中行
+    QTableWidgetItem *item0;
+    QWidget *item4;
+    for(int i=0;i<=3;i++){
+        item0=ui->tb_download->takeItem(row,i);
+        delete item0;
+        item0=nullptr;
+    }
+    for(int i=4;i<=5;i++){
+        item4=ui->tb_download->cellWidget(row,i);
+        delete item4;
+        item4=nullptr;
+    }
+    ui->tb_download->removeRow(row);
 }
 
 void MainDialog::slot_insertFileInfo(FileInfo& file)
