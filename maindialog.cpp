@@ -241,12 +241,12 @@ void MainDialog::slot_insertTbComplete(FileInfo &file,QString transType)
     ui->tb_finished->setItem(rows,1,item1);
     ui->tb_finished->setItem(rows,2,item2);
 
-    if(transType=="upload")
+    if(transType==_DEF_UPLOAD)
     {
         QTableWidgetItem * item3=new QTableWidgetItem("上传完成");
         ui->tb_finished->setItem(rows,3,item3);
     }
-    else{
+    else if(transType==_DEF_DOWNLOAD){
         QPushButton* button=new QPushButton;//下载完成 点击按钮弹出文件夹
         button->setIcon(QIcon(":/resources/images/folder.png"));
         //设置按钮风格

@@ -491,6 +491,29 @@ void CKernel::slot_dealAddFolderRs(uint from, char *data, int len)
     slot_getCurFileList();
 }
 
+void CKernel::slot_dealQuickUploadRs(uint from, char *data, int len)
+{
+    //处理文件秒传
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_QUICK_UPLOAD_RS* rs=(STRU_QUICK_UPLOAD_RS*)data;
+    //2.判断结果-成功
+    if(rs->result==false)return;
+    //3.获取文件信息
+    if(m_mapTimeToFileinfo.count(rs->timestamp)==0)return;
+    FileInfo& file=m_mapTimeToFileinfo[rs->timestamp];
+    //4.加入上传完成列表
+    m_pMainDialog->slot_insertTbComplete(file,_DEF_UPLOAD);
+    //5.刷新当前列表
+    if(m_curDir==file.dir){//是当前目录就刷新
+         refreshList();
+    }
+    //6.关闭文件信息 删除节点
+    fclose(file.pFile);
+    m_mapTimeToFileinfo.erase(rs->timestamp);
+
+}
+
 
 //工具函数------------------------------------------------------------------------
 
@@ -544,6 +567,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_FILE_HEADER_RQ)=&CKernel::slot_dealFileHeadRq;
     NetMap(_DEF_PACK_FILE_CONTENT_RQ)=&CKernel::slot_dealContentFileRq;
     NetMap(_DEF_PACK_ADD_FOLDER_RS)=&CKernel::slot_dealAddFolderRs;
+    NetMap(_DEF_PACK_QUICK_UPLOAD_RS)=&CKernel::slot_dealQuickUploadRs;
 
 }
 
