@@ -28,7 +28,8 @@ private:
     ~CKernel();
 
 signals:
-    void sig_updateFileProgress(int timestamp,int pos);
+    void sig_updateUploadFileProgress(int timestamp,int pos);
+    void sig_updateDownloadFileProgress(int timestamp,int pos);
     void sig_insertFileInfo(FileInfo& file);
 public:
     //获取对象的静态方法-全局创建/堆区创建
@@ -56,6 +57,7 @@ private slots:
     void slot_dealContentFileRs(uint from,char* data,int len);
     void slot_dealGetListRs(uint from,char* data,int len);
     void slot_dealFileHeadRq(uint from,char* data,int len);
+    void slot_dealContentFileRq(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);

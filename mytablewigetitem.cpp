@@ -11,9 +11,9 @@ void MytablewigetItem::slot_setFile(FileInfo &file)
     this->setText(m_file.name);
     //设置图标
     if(file.type=="file"){
-        this->setIcon(QIcon(":/images/file.png"));
+        this->setIcon(QIcon(":/resources/images/file.png"));
     }else if(file.type=="folder"){
-        this->setIcon(QIcon(":/images/folder.png"));
+        this->setIcon(QIcon(":/resources/images/folder.png"));
     }
     //勾选
     this->setCheckState(Qt::Unchecked);//设置为未勾选

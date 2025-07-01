@@ -45,10 +45,13 @@ public slots:
     //界面控制槽
     void slot_insertUploadFile(FileInfo& file);
     void slot_insertDownloadFile(FileInfo& file);
-    void slot_insertUploadComplete(FileInfo& file);
-    void slot_updateFileProgress(int timestamp,int pos);
+    void slot_insertTbComplete(FileInfo& file,QString transType);
+    void slot_updateUploadFileProgress(int timestamp,int pos);
+    void slot_updateDownloadFileProgress(int timestamp,int pos);
     void slot_deleteUploadFileByRow(int row);
+    void slot_deleteDownloadFileByRow(int row);
     void slot_insertFileInfo(FileInfo& file);
+    void slot_openPath(bool flag);
 private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;

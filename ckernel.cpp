@@ -19,6 +19,8 @@ CKernel::CKernel(QObject *parent)
     m_ip="";
     m_port="";
     loadIniFile();
+    //设置系统路径
+    setSystemPtah();
     //创建网络中介者
     m_pClient=new TcpClientMediator;
     //客户端连接真实地址
@@ -42,14 +44,16 @@ CKernel::CKernel(QObject *parent)
     connect(m_pMainDialog,SIGNAL(sig_close()),this,SLOT(slot_closeMainDialog()));
     connect(m_pMainDialog,SIGNAL(sig_uploadFile(QString,QString)),
             this,SLOT(slot_uploadFile(QString,QString)));
-    connect(this,SIGNAL(sig_updateFileProgress(int,int)),
-             m_pMainDialog,SLOT(slot_updateFileProgress(int,int)));
+    connect(this,SIGNAL(sig_updateUploadFileProgress(int,int)),
+             m_pMainDialog,SLOT(slot_updateUploadFileProgress(int,int)));
     connect(this,SIGNAL(sig_insertFileInfo(FileInfo&)),
             m_pMainDialog,SLOT(slot_insertFileInfo(FileInfo&)));
     connect(m_pMainDialog,SIGNAL(sig_downloadFile(int,QString)),
              this,SLOT(slot_downloadFile(int,QString)));
     connect(m_pMainDialog,SIGNAL(sig_downloadFolder(int,QString)),
             this,SLOT(slot_downloadFolder(int,QString)));
+    connect(this,SIGNAL(sig_updateDownloadFileProgress(int,int)),
+            m_pMainDialog,SLOT(slot_updateDownloadFileProgress(int,int)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -325,7 +329,7 @@ void CKernel::slot_dealContentFileRs(uint from, char *data, int len)
         //更新上传进度
         //方法1：信号槽控制-多线程
         //方法2：直接调用 一定是当前函数在主线程
-        Q_EMIT sig_updateFileProgress(file.timestamp,file.pos);//时间戳判断文件信息
+        Q_EMIT sig_updateUploadFileProgress(file.timestamp,file.pos);//时间戳判断文件信息
         //判断是否结束
         if(file.pos>=file.size){
             //关闭文件
@@ -388,9 +392,9 @@ void CKernel::slot_dealFileHeadRq(uint from, char *data, int len)
     //3.打开文件-二进制文本形式打开
     char pathbuf[1000]="";
     Utf8ToGB2312(pathbuf,1000,file.absolutePath);
-    file.pFile=fopen(pathbuf,"wb");
+    file.pFile=fopen(pathbuf,"wb+");
     if(!file.pFile){
-        qDebug()<<"打开文件失败";
+        qDebug() << "打开文件失败:" << file.absolutePath << "错误:" << strerror(errno);
         return;
     }
     //保存下载信息到空间 TODO:
@@ -403,6 +407,45 @@ void CKernel::slot_dealFileHeadRq(uint from, char *data, int len)
     rs.userid=m_id;
     rs.result=1;
     sendData((char*)&rs,sizeof(rs));
+}
+
+void CKernel::slot_dealContentFileRq(uint from, char *data, int len)
+{
+    //处理下载的文件内容请求
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_FILE_CONTENT_RQ* rq=(STRU_FILE_CONTENT_RQ*)data;
+    STRU_FILE_CONTENT_RS rs;
+    //2.读取文件信息
+    FileInfo& file=m_mapTimeToFileinfo[rq->timestamp];
+    //3.写入文件
+    int wlen=fwrite(rq->content,1,rq->len,file.pFile);
+    if(wlen!=rq->len){
+        //失败 游标回跳
+        fseek(file.pFile,-1*wlen,SEEK_CUR);
+        rs.result=false;
+        qDebug()<<"写入文件失败";
+
+    }else{
+        //成功 更新pos
+        rs.result=true;
+        file.pos+=wlen;
+        //更新下载进度-进度检查决定控件删除
+        Q_EMIT sig_updateDownloadFileProgress(file.timestamp,file.pos);
+        //如果到达末尾
+        if(file.pos>=file.size){
+            //关闭文件，回收map节点
+            fclose(file.pFile);
+            m_mapTimeToFileinfo.erase(file.timestamp);
+            return;
+        }
+   }
+    //4.发送结果
+   rs.fileid=rq->fileid;
+   rs.len=rq->len;
+   rs.timestamp=rq->timestamp;
+   rs.userid=rq->userid;
+   sendData((char*)&rs,sizeof(rs));
 }
 
 
@@ -456,6 +499,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_FILE_CONTENT_RS)=&CKernel::slot_dealContentFileRs;
     NetMap(_DEF_PACK_FILE_LIST_RS)=&CKernel::slot_dealGetListRs;
     NetMap(_DEF_PACK_FILE_HEADER_RQ)=&CKernel::slot_dealFileHeadRq;
+    NetMap(_DEF_PACK_FILE_CONTENT_RQ)=&CKernel::slot_dealContentFileRq;
 
 }
 
@@ -534,6 +578,7 @@ void CKernel::sendData(char* buf,int len)
 #include <QCoreApplication>
 void CKernel::setSystemPtah()
 {
+    qDebug()<<__func__;
     //设置系统路径
     QString path=QCoreApplication::applicationDirPath()+"/NetDisk";
     QDir dir;

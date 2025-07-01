@@ -22,7 +22,7 @@ MainDialog::MainDialog(QWidget *parent)
 
     //设置添加文件菜单
     //1. 定义菜单项 资源路径
-    QAction* action_addFolder=new QAction(QIcon(":images/folder,png"),"新建文件夹");
+    QAction* action_addFolder=new QAction(QIcon(":/resources/images/folder.png"),"新建文件夹");
     QAction* action_uploadFile=new QAction("上传文件");
     QAction* action_uploadFolder=new QAction("上传文件夹");
     //2. 添加菜单项
@@ -193,7 +193,7 @@ void MainDialog::slot_insertDownloadFile(FileInfo &file)
     ui->tb_download->setCellWidget(rows,5,button);
 }
 
-void MainDialog::slot_insertUploadComplete(FileInfo &file)
+void MainDialog::slot_insertTbComplete(FileInfo &file,QString transType)
 {
     //回收文件或者文件上传结束使用
     //上传完成
@@ -208,15 +208,51 @@ void MainDialog::slot_insertUploadComplete(FileInfo &file)
     item0->slot_setFile(file);
     QTableWidgetItem *item1=new QTableWidgetItem(file.time);
     QTableWidgetItem *item2=new QTableWidgetItem(file.getSize(file.size));
-    QTableWidgetItem *item3=new QTableWidgetItem("上传完成");
     ui->tb_finished->setItem(rows,0,item0);
     ui->tb_finished->setItem(rows,1,item1);
     ui->tb_finished->setItem(rows,2,item2);
-    ui->tb_finished->setItem(rows,3,item3);
 
+    if(transType=="upload")
+    {
+        QTableWidgetItem * item3=new QTableWidgetItem("上传完成");
+        ui->tb_finished->setItem(rows,3,item3);
+    }
+    else{
+        QPushButton* button=new QPushButton;//下载完成 点击按钮弹出文件夹
+        button->setIcon(QIcon(":/resources/images/folder.png"));
+        //设置按钮风格
+        button->setFlat(true);//设置扁平
+        //如何将文件路径告诉按钮？-给文件添加属性：tooltip提示
+        button->setToolTip(file.absolutePath);
+        //按钮功能实现
+        connect(button,SIGNAL(clicked(bool)),this,SLOT(slot_openPath(bool)));
+        ui->tb_finished->setCellWidget(rows,3,button);
+    }
+}
+#include <QProcess>
+void MainDialog::slot_openPath(bool flag){
+    qDebug()<<__func__;
+    //实现下载完成列表中，点击下载完成按钮，弹出下载文件
+    //如何得到button按钮？使用sender得到信号发送者的指针-button
+    QPushButton* button=(QPushButton*)QObject::sender();
+    QString path=button->toolTip();//通过tooltip提示得到文件路径
+    //如何打开文件路径？-打开文件资源管理器进程
+    //char pathbuf[1024]="";
+    //需要将"/"转换为"\\"
+    path.replace('/','\\');
+    //explorer 使用 explorer+路径 可以运行
+    QProcess process;
+    QStringList lst;
+    //QStringList填入
+    //方法1：
+    //lst.push_back("/select,");
+    //lst.push_back(path);
+    //方法2：左移填入
+    lst<<QString("/select,")<<path;
+    process.startDetached("explorer",lst);//进程名 参数列表 工作路径
 }
 
-void MainDialog::slot_updateFileProgress(int timestamp, int pos)
+void MainDialog::slot_updateUploadFileProgress(int timestamp, int pos)
 {
     qDebug()<<__func__;
     //更新进度条
@@ -234,9 +270,9 @@ void MainDialog::slot_updateFileProgress(int timestamp, int pos)
             item0->m_file.pos=pos;
             //4.看是否结束
             if(item4->value()>=item4->maximum()){
-                 //是-删除该项-添加到完成
-                slot_insertUploadComplete(item0->m_file);
-                 slot_deleteUploadFileByRow(i);
+                //是-删除该项-添加到完成
+                slot_insertTbComplete(item0->m_file,"upload");
+                slot_deleteUploadFileByRow(i);
                 return;
             }
         }
@@ -245,9 +281,42 @@ void MainDialog::slot_updateFileProgress(int timestamp, int pos)
 
 }
 
+void MainDialog::slot_updateDownloadFileProgress(int timestamp, int pos)
+{
+    //更新下载进度条
+    qDebug()<<__func__;
+    //1.遍历所有项 第0列
+    //法1：获取到当前多少行，固定行数遍历<-(使用)
+    //法2：使用count做循环条件，所有项清空之后可以作为循环结束条件
+    int rows=ui->tb_download->rowCount();
+    for(int i=0;i<rows;i++){
+        //2.取到每一个文件的时间信息戳，比对是否一致
+        MytablewigetItem* item0=(MytablewigetItem*)ui->tb_download->item(i,0);
+        //3.一致，更新进度
+        if(item0->m_file.timestamp==timestamp){
+            QProgressBar* item4=(QProgressBar*)ui->tb_download->cellWidget(i,4);
+            item4->setValue(pos);
+            item0->m_file.pos=pos;
+            //4.看是否结束
+            if(item4->value()>=item4->maximum()){
+                //是-删除该项-添加到完成
+                slot_insertTbComplete(item0->m_file,"download");
+                slot_deleteUploadFileByRow(i);
+                return;
+            }
+        }
+
+    }
+}
+
 void MainDialog::slot_deleteUploadFileByRow(int row)
 {
     //删除uploadfile中行
+}
+
+void MainDialog::slot_deleteDownloadFileByRow(int row)
+{
+
 }
 
 void MainDialog::slot_insertFileInfo(FileInfo& file)
