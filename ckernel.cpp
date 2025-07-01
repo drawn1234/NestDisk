@@ -56,6 +56,8 @@ CKernel::CKernel(QObject *parent)
             m_pMainDialog,SLOT(slot_updateDownloadFileProgress(int,int)));
     connect(m_pMainDialog,SIGNAL(sig_addFolder(QString,QString)),
             this,SLOT(slot_addFolder(QString,QString)));
+    connect(m_pMainDialog,SIGNAL(sig_changeDir(QString)),
+            this,SLOT(slot_changeDir(QString)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -172,7 +174,7 @@ void CKernel::slot_uploadFile(QString path, QString dir)
     sendData((char*)&rq,sizeof(rq));
 }
 
-void CKernel::slot_getCurFileList(QString dir)
+void CKernel::slot_getCurFileList()
 {
     //获取当前文件列表
     //1.获取文件列表请求
@@ -221,7 +223,14 @@ void CKernel::slot_addFolder(QString name, QString dir)
     sendData((char*)&rq,sizeof(rq));
 }
 
-
+void CKernel::slot_changeDir(QString dir)
+{
+    qDebug()<<__func__;
+    //更新当前目录
+    m_curDir=dir;
+    //刷新文件列表
+    refreshList();
+}
 //信息处理函数-------------------------------------------------------------------------------
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {
@@ -291,7 +300,7 @@ void CKernel::slot_dealLoginRs(uint from, char *data, int len)
         m_name=rs->name;
         //获取根目录下文件列表
         m_curDir="/";
-        slot_getCurFileList(m_curDir);
+        slot_getCurFileList();
         break;
     }
 }
@@ -349,6 +358,8 @@ void CKernel::slot_dealContentFileRs(uint from, char *data, int len)
         Q_EMIT sig_updateUploadFileProgress(file.timestamp,file.pos);//时间戳判断文件信息
         //判断是否结束
         if(file.pos>=file.size){
+            //刷新列表
+            refreshList();
             //关闭文件
             fclose(file.pFile);
             m_mapTimeToFileinfo.erase(rs->timestamp);
@@ -476,10 +487,8 @@ void CKernel::slot_dealAddFolderRs(uint from, char *data, int len)
         QMessageBox::about(m_pMainDialog,"提示","服务器问题，新建文件失败");
         return;
     }
-    //3.清空列表
-    m_pMainDialog->slot_deleteAllFileInfo();
-    //4.重新插入列表
-    slot_getCurFileList("/");
+    //3.刷新文件列表
+    slot_getCurFileList();
 }
 
 
@@ -623,6 +632,14 @@ void CKernel::setSystemPtah()
     }
     //默认路径
     m_sysPath=path;
+}
+
+//刷新当前路径下文件列表
+void CKernel::refreshList()
+{
+    //刷新当前文件列表
+    m_pMainDialog->slot_deleteAllFileInfo();
+    slot_getCurFileList();
 }
 
 #ifdef USE_SERVER

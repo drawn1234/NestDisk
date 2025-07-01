@@ -474,3 +474,19 @@ void MainDialog::slot_action_deleteFile(bool flag)
     qDebug()<<__func__;
 }
 
+
+void MainDialog::on_tb_file_cellDoubleClicked(int row, int column)
+{
+    //双击行进行跳转进如文件夹
+    //1.文件类型判断
+    MytablewigetItem* item0=(MytablewigetItem*)ui->tb_file->item(row,0);
+    if(item0->m_file.type=="folder"){
+        //2.文件夹路径拼接
+        QString dir=ui->lb_path->text()+item0->m_file.name+"/";
+        //3.更新当前目录-刷新文件列表
+        ui->lb_path->setText(dir);
+        Q_EMIT sig_changeDir( dir);
+    }
+
+}
+

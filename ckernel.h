@@ -45,10 +45,11 @@ private slots:
     void slot_registerCommit(QString tel,QString pass,QString name);
     void slot_loginCommit(QString tel,QString pass);
     void slot_uploadFile(QString path,QString dir);
-    void slot_getCurFileList(QString dir);
+    void slot_getCurFileList();
     void slot_downloadFile(int fileid,QString dir);
     void slot_downloadFolder(int fileid,QString dir);
     void slot_addFolder(QString name,QString dir);
+    void slot_changeDir(QString dir);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
@@ -70,6 +71,7 @@ private:
     void setNetPackMap();
     void sendData(char* buf,int len);
     void setSystemPtah();
+    inline void refreshList();
 private:
     MainDialog* m_pMainDialog;
     TcpClientMediator* m_pClient;

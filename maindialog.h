@@ -21,6 +21,7 @@ signals:
     void sig_downloadFile(int fileid,QString dir);
     void sig_downloadFolder(int fileid,QString dir);
     void sig_addFolder(QString name,QString dir);
+    void sig_changeDir(QString dir);
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();
@@ -42,6 +43,8 @@ private slots:
     void slot_action_dowloadFile(bool flag);
     void slot_action_shareFile(bool flag);
     void slot_action_deleteFile(bool flag);
+    void on_tb_file_cellDoubleClicked(int row, int column);
+
 public slots:
     //界面控制槽
     void slot_insertUploadFile(FileInfo& file);
