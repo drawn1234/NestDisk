@@ -10,6 +10,8 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_DOWNLOAD_FOLDER_RQ) = &CLogic::downloadFileFolder;
     NetPackMap(_DEF_PACK_FILE_HEADER_RS) = &CLogic::downloadFileHeadRs;
     NetPackMap(_DEF_PACK_FILE_CONTENT_RS) = &CLogic::fileContentRs;
+    NetPackMap(_DEF_PACK_ADD_FOLDER_RQ) = &CLogic::addFolder;
+
 }
 
 long CLogic::number()
@@ -413,7 +415,7 @@ void CLogic::downloadFileHeadRs(sock_fd clientfd, char *szbuf, int nlen)
     rq.timestamp=rs->timestamp;
     SendData(clientfd,(char*)&rq,sizeof(rq));
 }
-
+//文件内容回复
 void CLogic::fileContentRs(sock_fd clientfd, char *szbuf, int nlen)
 {
     _DEF_COUT_FUNC_
@@ -459,6 +461,59 @@ void CLogic::fileContentRs(sock_fd clientfd, char *szbuf, int nlen)
     rq.userid=rs->userid;
     rq.timestamp=rs->timestamp;
     SendData(clientfd,(char*)&rq,sizeof(rq));
+}
+//新建文件夹
+void CLogic::addFolder(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_ADD_FOLDER_RQ* rq=(STRU_ADD_FOLDER_RQ*)szbuf;
+    STRU_ADD_FOLDER_RS rs;
+    //2.数据库处理
+    //插入文件表 size path count md5 state type
+    char sql[1024]="";
+    list<string> lststr;
+    rq->dir;
+    rq->time;
+    rq->fileName;
+    rq->timestamp;
+    char path[1024]="";
+    sprintf(path,"%s%d%s%s",_DEF_PATH,rq->userid,rq->dir,rq->fileName);
+    sprintf(sql,"insert into t_file (f_size,f_path,f_count,f_md5,f_state,f_type) values(0,'%s',0,'?',1,'folder');",path);
+    bool res= m_sql->UpdataMysql(sql);
+    if(!res){
+        printf("插入数据库失败1:%s\n",sql);
+        return;
+    }
+    //查询文件id
+    sprintf(sql,"select f_id from t_file where f_path='%s';",path);
+    int ires=m_sql->SelectMysql(sql,1,lststr);
+    if(!res){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+    int fid=stoi(lststr.front());
+    lststr.pop_front();
+    //插入用户文件关系表 u_id f_id f_dir f_name f_uploadtime
+    sprintf(sql,"insert into t_user_file(u_id,f_id,f_dir,f_name,f_uploadtime) values('%d','%d','%s','%s','%s');"
+            ,rq->userid,fid,rq->dir,rq->fileName,rq->time);
+    res=m_sql->UpdataMysql(sql);
+    if(!res){
+        printf("插入数据库失败2:%s\n",sql);
+        return;
+    }
+    //3.创建目录
+    umask(0000);
+    ires=mkdir(path,0777);
+    if(ires!=0){
+        printf("创建目录失败");
+        return;
+    }
+    //4.发送回复
+    rs.result=true;
+    rs.userid=rq->userid;
+    rs.timestamp=rq->timestamp;
+    SendData(clientfd,(char*)&rs,sizeof (rs));
 }
 
 

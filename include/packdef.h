@@ -384,6 +384,41 @@ struct STRU_FILE_HEADER_RS
     int result;
 };
 
+//////////////////新建文件夹/////////////////////
+//新建文件夹请求
+#define _DEF_PACK_ADD_FOLDER_RQ       (_DEF_PACK_BASE + 15 )
+//新建文件夹回复
+#define _DEF_PACK_ADD_FOLDER_RS       (_DEF_PACK_BASE + 16 )
+
+//新建文件夹请求
+struct STRU_ADD_FOLDER_RQ
+{
+    STRU_ADD_FOLDER_RQ():type(_DEF_PACK_ADD_FOLDER_RQ)
+    ,timestamp(0),userid(0){
+        memset( fileName , 0, sizeof(fileName) );
+        memset( dir , 0, sizeof(dir) );
+        memset( time , 0, sizeof(time) );
+    }
+    PackType type;
+    int timestamp;
+    int userid;
+    char fileName[_MAX_PATH_SIZE];
+    char dir[_MAX_PATH_SIZE];//路径
+    char time[_MAX_SIZE]; //上传时间
+};
+
+//新建文件夹回复
+struct STRU_ADD_FOLDER_RS
+{
+    STRU_ADD_FOLDER_RS(): type(_DEF_PACK_ADD_FOLDER_RS)
+    ,timestamp(0) ,userid(0), result(0){
+
+    }
+    PackType type;
+    int timestamp;
+    int userid;
+    int result;
+};
 
 
 

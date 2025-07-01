@@ -43,6 +43,8 @@ public:
     void downloadFileHeadRs(sock_fd clientfd, char*szbuf, int nlen);
     //文件块回复
     void fileContentRs(sock_fd clientfd, char*szbuf, int nlen);
+    //新建文件夹
+    void addFolder(sock_fd clientfd, char*szbuf, int nlen);
     /*******************************************/
 
 private:
