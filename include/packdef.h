@@ -370,21 +370,19 @@ struct STRU_FILE_HEADER_RQ
     char md5[_MAX_SIZE];
     char fileType[_MAX_SIZE];//文件类型
 };
-
 //文件头回复
 struct STRU_FILE_HEADER_RS
 {
     STRU_FILE_HEADER_RS(): type(_DEF_PACK_FILE_HEADER_RS)
-      , userid(0), fileid(0),timestamp(0),result(1){
+    , userid(0), fileid(0),result(1),timestamp(0){
 
     }
     PackType type;
-    int fileid;
     int timestamp;
     int userid;
+    int fileid;
     int result;
 };
-
 
 
 

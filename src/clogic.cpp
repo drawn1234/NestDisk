@@ -8,7 +8,8 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_FILE_LIST_RQ) = &CLogic::getFileList;
     NetPackMap(_DEF_PACK_DOWNLOAD_FILE_RQ) = &CLogic::downloadFile;
     NetPackMap(_DEF_PACK_DOWNLOAD_FOLDER_RQ) = &CLogic::downloadFileFolder;
-
+    NetPackMap(_DEF_PACK_FILE_HEADER_RS) = &CLogic::downloadFileHeadRs;
+    NetPackMap(_DEF_PACK_FILE_CONTENT_RS) = &CLogic::fileContentRs;
 }
 
 long CLogic::number()
@@ -166,7 +167,7 @@ void CLogic::uploadFile(sock_fd clientfd, char *szbuf, int nlen)
         //1. 插入文件信息
         list<string> lststr;
         char sql[1024]="";
-        sprintf(sql,"insert into t_file(f_size,f_path,f_md5,f_count,f_state,f_type) values('%d','%s','%s',0,1,'%s');",
+        sprintf(sql,"insert into t_file(f_size,f_path,f_md5,f_count,f_state,f_type) values('%d','%s','%s',0,0,'%s');",
                 file->size,cPath,file->md5.c_str(),file->type.c_str());
         bool res=m_sql->UpdataMysql(sql);
         if(!res){
@@ -354,9 +355,11 @@ void CLogic::downloadFile(sock_fd clientfd, char *szbuf, int nlen)
         file->type="file";
         file->absolutePath=path;
         file->fid=fileid;
-        file->fileFd=open(file->absolutePath.c_str(),O_CREAT|O_WRONLY|O_TRUNC,0777);
+        file->fileFd=open(path.c_str(),O_RDONLY);
         if(file->fileFd<=0){
-            printf("打开文件失败：%s\n",file->absolutePath.c_str());
+            printf("打开文件失败：%s\n",path.c_str());
+            delete file;
+            file=nullptr;
             return;
         }
         //key值
@@ -382,6 +385,80 @@ void CLogic::downloadFile(sock_fd clientfd, char *szbuf, int nlen)
 void CLogic::downloadFileFolder(sock_fd clientfd, char *szbuf, int nlen)
 {
     _DEF_COUT_FUNC_
+}
+//文件头回复
+void CLogic::downloadFileHeadRs(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_FILE_HEADER_RS* rs=(STRU_FILE_HEADER_RS*)szbuf;
+    STRU_FILE_CONTENT_RQ rq;
+    //2.取文件信息
+    int64_t user_time=rs->userid*number()+rs->timestamp;
+    FileInfo* file=nullptr;
+    if(!m_mapTimstampToFileinfo.find(user_time,file)){
+        printf("找不到文件信息\n");
+        return;
+    }
+    //3.读文件
+    int len=read(file->fileFd,rq.content,_DEF_BUFFER);
+    if(len<0){
+        perror("读取文件失败");//如果读取文件失败，依然发送内容请求，内容请求失败，发送文件头回复，成死循环
+        return;
+    }
+    //4.发送文件内容请求
+    rq.len=len;
+    rq.fileid=rs->fileid;
+    rq.userid=rs->userid;
+    rq.timestamp=rs->timestamp;
+    SendData(clientfd,(char*)&rq,sizeof(rq));
+}
+
+void CLogic::fileContentRs(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_FILE_CONTENT_RS* rs=(STRU_FILE_CONTENT_RS*)szbuf;
+    STRU_FILE_CONTENT_RQ rq;
+    //2.获取文件信息
+    FileInfo* file=nullptr;
+    int64_t user_time=rs->userid*number()+rs->timestamp;
+    if(!m_mapTimstampToFileinfo.find(user_time,file)){
+        printf("未找到该文件信息\n");
+        return;
+    }
+    int len=0;
+    if(rs->result==false){
+        //下载失败 游标回跳
+        lseek(file->fileFd,-1*rs->len,SEEK_CUR);
+    }else{
+        //成功  pos偏移
+        file->pos+=rs->len;
+        //3.读取文件内容
+        len=read(file->fileFd,rq.content,_DEF_BUFFER);
+        //读取失败，游标偏移原位
+        if(len<0){
+            lseek(file->fileFd,-1*len,SEEK_CUR);
+            perror("读取文件失败");
+        }else{
+            //读取成功
+           //如果到末尾，关闭文件，删除文件信息
+            if(file->pos>=file->size){
+                close(file->fileFd);
+                m_mapTimstampToFileinfo.erase(user_time);
+                delete file;
+                file=nullptr;
+                return;
+            }
+        }
+    }
+
+    //4.发送文件块请求
+    rq.len=len;
+    rq.fileid=rs->fileid;
+    rq.userid=rs->userid;
+    rq.timestamp=rs->timestamp;
+    SendData(clientfd,(char*)&rq,sizeof(rq));
 }
 
 

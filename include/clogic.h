@@ -39,6 +39,10 @@ public:
     void downloadFile(sock_fd clientfd, char*szbuf, int nlen);
     //下载文件夹
     void downloadFileFolder(sock_fd clientfd, char*szbuf, int nlen);
+    //文件头回复处理
+    void downloadFileHeadRs(sock_fd clientfd, char*szbuf, int nlen);
+    //文件块回复
+    void fileContentRs(sock_fd clientfd, char*szbuf, int nlen);
     /*******************************************/
 
 private:
