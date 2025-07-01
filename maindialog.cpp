@@ -100,32 +100,11 @@ void MainDialog::on_pb_add_clicked()
     //1. 弹出菜单
     m_menuAddFile.exec(QCursor::pos());
 }
-
+//新建文件夹
+#include <QInputDialog>
 void MainDialog::slot_action_addFolder(bool flag)
 {
     qDebug()<<__func__;
-
-}
-
-void MainDialog::slot_action_uploadFile(bool flag)
-{
-    qDebug()<<__func__;
-    //1.弹窗选择文件
-    QString path=QFileDialog::getOpenFileName(this,"选择文件","./");
-    if(path.isEmpty()){
-        qDebug()<<"上传文件失败";
-        return;}
-    //2.判断目前是否有相同的上传文件 有就取消
-
-    //3. 发送上传文件信号
-    QString dir=ui->lb_path->text();
-    Q_EMIT sig_uploadFile(path,dir);
-}
-
-//新建文件夹
-#include <QInputDialog>
-void MainDialog::slot_action_uploadFolder(bool flag)
-{
     qDebug()<<__func__;
     //1.弹出输入窗口
     QString name=QInputDialog::getText(this,"新建文件夹","输入名称");
@@ -152,6 +131,28 @@ void MainDialog::slot_action_uploadFolder(bool flag)
     //3. 采集文件名以及当前路径
     QString dir=ui->lb_path->text();
     Q_EMIT sig_addFolder(name,dir);
+
+}
+
+void MainDialog::slot_action_uploadFile(bool flag)
+{
+    qDebug()<<__func__;
+    //1.弹窗选择文件
+    QString path=QFileDialog::getOpenFileName(this,"选择文件","./");
+    if(path.isEmpty()){
+        qDebug()<<"上传文件失败";
+        return;}
+    //2.判断目前是否有相同的上传文件 有就取消
+
+    //3. 发送上传文件信号
+    QString dir=ui->lb_path->text();
+    Q_EMIT sig_uploadFile(path,dir);
+}
+
+
+void MainDialog::slot_action_uploadFolder(bool flag)
+{
+
 }
 
 void MainDialog::slot_insertUploadFile(FileInfo &file)
