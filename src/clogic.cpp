@@ -141,16 +141,48 @@ void CLogic::uploadFile(sock_fd clientfd, char *szbuf, int nlen)
     _DEF_COUT_FUNC_
     //1.拆包
     STRU_UPLOAD_FILE_RQ* rq=(STRU_UPLOAD_FILE_RQ*)szbuf;
+    FileInfo* file;
     //2.是否秒传
-        //1.是 TODO:
+    //根据md5 state=1 查数据库 得到f_id
+    list<string> lststr;
+    char sql[1024]="";
+    sprintf(sql,"select f_id from t_file where f_MD5='%s'and f_state=1;",rq->md5);
+    bool res=m_sql->SelectMysql(sql,1,lststr);
+    if(!res){
+        printf("select fileid error:%s\n",sql);
+        return;
+    }
+    int fid;
+    //是秒传
+    if(lststr.size()>0){
+        //记录fid
+        fid=stoi(lststr.front());
+        lststr.pop_front();
+        //写入用户文件关系
+        sprintf(sql,"insert into t_user_file(u_id,f_id,f_dir,f_name,f_uploadTime) values('%d','%d','%s','%s','%s');",
+                rq->userid,fid,rq->dir,rq->fileName,rq->time);
+        res=m_sql->UpdataMysql(sql);
+        if(!res){
+            printf("insert file-user error:%s\n",sql);
+            return;
+        }
+        //发送秒传回复包
+        STRU_QUICK_UPLOAD_RS rs;
+        rs.fileid=fid;
+        rs.userid=rq->userid;
+        rs.timestamp=rq->timestamp;
+        rs.result=true;
 
+        SendData(clientfd,(char*)&rs,sizeof(rs));
+        return;
+    }
     //3.创建文件信息
     //拼接文件路径
     char cPath[1000]="";
     //使用md5作为服务器中的文件名，避免文件重复
     sprintf(cPath,"%s%d%s%s",_DEF_PATH,rq->userid,rq->dir,rq->md5);//_DEF_PATH+userid+dir+md5
 
-    FileInfo* file=new FileInfo;
+    file=new FileInfo;
     file->dir=rq->dir;
     file->md5=rq->md5;
     file->name=rq->fileName;
@@ -167,14 +199,12 @@ void CLogic::uploadFile(sock_fd clientfd, char *szbuf, int nlen)
     m_mapTimstampToFileinfo.insert(user_time,file);
     //5. 数据库操作
         //1. 插入文件信息
-        list<string> lststr;
-        char sql[1024]="";
         sprintf(sql,"insert into t_file(f_size,f_path,f_md5,f_count,f_state,f_type) values('%d','%s','%s',0,0,'%s');",
                 file->size,cPath,file->md5.c_str(),file->type.c_str());
-        bool res=m_sql->UpdataMysql(sql);
+        res=m_sql->UpdataMysql(sql);
         if(!res){
             printf("insert  file error:%s\n",sql);
-
+            return;
         }
         //2.查文件id
         lststr.clear();
@@ -182,22 +212,23 @@ void CLogic::uploadFile(sock_fd clientfd, char *szbuf, int nlen)
         res=m_sql->SelectMysql(sql,1,lststr);
         if(!res){
             printf("select fileid error:%s\n",sql);
-
+            return;
         }
         string id=lststr.front();
         lststr.pop_front();
         file->fid=stoi(id);
+        fid=file->fid;
         //3. 插入用户文件关系
         sprintf(sql,"insert into t_user_file(u_id,f_id,f_dir,f_name,f_uploadTime) values('%d','%d','%s','%s','%s');",
                 rq->userid,file->fid,file->dir.c_str(),file->name.c_str(),file->time.c_str());
         res=m_sql->UpdataMysql(sql);
         if(!res){
             printf("insert file-user error:%s\n",sql);
-
+            return;
         }
     //6. 编写发送回复
     STRU_UPLOAD_FILE_RS rs;
-    rs.fileid=file->fid;
+    rs.fileid=fid;
     rs.userid=rq->userid;
     rs.timestamp=rq->timestamp;
     rs.result=true;
@@ -232,10 +263,6 @@ void CLogic::fileContentRq(sock_fd clientfd, char *szbuf, int nlen)
         file->pos+=len;
         //到达末尾
         if(file->pos>=file->size){
-            //是-关闭文件;回收map节点
-            close(file->fileFd);
-            m_mapTimstampToFileinfo.erase(user_time);
-            delete file;
             //更新文件状态已完成
             char sql[1024]="";
             sprintf(sql,"update t_file set f_state=1 where f_id='%d';",rq->fileid);
@@ -243,6 +270,11 @@ void CLogic::fileContentRq(sock_fd clientfd, char *szbuf, int nlen)
             if(!res){
                 printf("数据库更新失败：%s\n",sql);
             }
+            //是-关闭文件;回收map节点
+            close(file->fileFd);
+            m_mapTimstampToFileinfo.erase(user_time);
+            delete file;
+
         }
 
     }

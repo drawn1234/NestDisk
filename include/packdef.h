@@ -422,9 +422,23 @@ struct STRU_ADD_FOLDER_RS
 
 
 
+///////////////// 文件秒传/////////////////////
+//秒传回复
+#define _DEF_PACK_QUICK_UPLOAD_RS    (_DEF_PACK_BASE + 17 )
 
+//上传文件回复
+struct STRU_QUICK_UPLOAD_RS
+{
+    STRU_QUICK_UPLOAD_RS(): type(_DEF_PACK_QUICK_UPLOAD_RS)
+    , userid(0), fileid(0),result(1),timestamp(0){
 
-
+    }
+    PackType type;
+    int timestamp;//时间戳用于区分不同任务
+    int userid;//用户id
+    int fileid; //文件id
+    int result; //结果
+};
 
 
 
