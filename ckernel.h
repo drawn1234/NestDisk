@@ -48,6 +48,7 @@ private slots:
     void slot_getCurFileList(QString dir);
     void slot_downloadFile(int fileid,QString dir);
     void slot_downloadFolder(int fileid,QString dir);
+    void slot_addFolder(QString name,QString dir);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);

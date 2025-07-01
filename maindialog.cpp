@@ -104,6 +104,7 @@ void MainDialog::on_pb_add_clicked()
 void MainDialog::slot_action_addFolder(bool flag)
 {
     qDebug()<<__func__;
+
 }
 
 void MainDialog::slot_action_uploadFile(bool flag)
@@ -121,9 +122,36 @@ void MainDialog::slot_action_uploadFile(bool flag)
     Q_EMIT sig_uploadFile(path,dir);
 }
 
+//新建文件夹
+#include <QInputDialog>
 void MainDialog::slot_action_uploadFolder(bool flag)
 {
     qDebug()<<__func__;
+    //1.弹出输入窗口
+    QString name=QInputDialog::getText(this,"新建文件夹","输入名称");
+    //处理非法名字-空白字符
+    QString nametmp=name;
+    if(name.isEmpty()||nametmp.remove(" ").isEmpty()){
+        QMessageBox::about(this,"提示","文件名不为空");
+        return;
+    }
+    //过滤敏感词汇
+
+    //长度处理
+
+    //过滤非法字符 /\:*^&<>|
+    //方法1：正则表达式 方法2：contains
+    if(name.contains("\\")||name.contains("/")||name.contains(":")||name.contains("^")||name.contains("&")
+        ||name.contains("<")||name.contains(">")||name.contains("?"))
+    {
+        QMessageBox::about(this,"提示","名字不能包含‘/\:*^&<>|’");
+        return;
+    }
+    //2.判断是否已经存在
+
+    //3. 采集文件名以及当前路径
+    QString dir=ui->lb_path->text();
+    Q_EMIT sig_addFolder(name,dir);
 }
 
 void MainDialog::slot_insertUploadFile(FileInfo &file)
@@ -223,6 +251,7 @@ void MainDialog::slot_insertTbComplete(FileInfo &file,QString transType)
         //设置按钮风格
         button->setFlat(true);//设置扁平
         //如何将文件路径告诉按钮？-给文件添加属性：tooltip提示
+        //方法2：发送信号
         button->setToolTip(file.absolutePath);
         //按钮功能实现
         connect(button,SIGNAL(clicked(bool)),this,SLOT(slot_openPath(bool)));

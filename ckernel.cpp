@@ -54,6 +54,8 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_downloadFolder(int,QString)));
     connect(this,SIGNAL(sig_updateDownloadFileProgress(int,int)),
             m_pMainDialog,SLOT(slot_updateDownloadFileProgress(int,int)));
+    connect(m_pMainDialog,SIGNAL(sig_addFolder(QString,QString)),
+            this,SLOT(slot_addFolder(QString,QString)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -202,6 +204,21 @@ void CKernel::slot_downloadFolder(int fileid, QString dir)
 {
     //下载文件夹请求
     qDebug()<<__func__;
+}
+
+void CKernel::slot_addFolder(QString name, QString dir)
+{
+    //新建文件夹
+    qDebug()<<__func__;
+    //1.打包数据
+    STRU_ADD_FOLDER_RQ rq;
+    strcpy(rq.dir,dir.toUtf8().constData());
+    strcpy(rq.fileName,name.toUtf8().constData());
+    strcpy(rq.time,QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss").toUtf8().constData());
+    rq.timestamp=QDateTime::currentDateTime().toString("hhmmsszzz").toInt();
+    rq.userid=m_id;
+    //2.发送新建文件夹请求
+    sendData((char*)&rq,sizeof(rq));
 }
 
 
