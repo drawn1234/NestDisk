@@ -45,6 +45,8 @@ private slots:
     void slot_action_deleteFile(bool flag);
     void on_tb_file_cellDoubleClicked(int row, int column);
 
+    void on_pb_last_clicked();
+
 public slots:
     //界面控制槽
     void slot_insertUploadFile(FileInfo& file);

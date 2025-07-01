@@ -490,3 +490,22 @@ void MainDialog::on_tb_file_cellDoubleClicked(int row, int column)
 
 }
 
+
+void MainDialog::on_pb_last_clicked()
+{
+    //点击路径回退
+    //1.获取当前目录
+    QString curDir=ui->lb_path->text();
+    //2.是否是根目录-不是
+    if(curDir=="/")return;
+    //3.找最右边的"/",从它往左寻找第二个"/"
+    //.left()从左边开始取固定长度字符串
+    curDir=curDir.left(curDir.lastIndexOf("/"));
+    //新目录=第二个"/"+左边所有字符串
+    curDir=curDir.left(curDir.lastIndexOf("/")+1);
+    //4.更新目录
+    ui->lb_path->setText(curDir);
+    Q_EMIT sig_changeDir(curDir);
+
+}
+
