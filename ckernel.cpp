@@ -465,9 +465,35 @@ void CKernel::slot_dealFileHeadRq(uint from, char *data, int len)
     file.time=QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     //默认路径 sysPath（不含最后的"/"）+dir+name
     file.absolutePath=QString("%1%2%3").arg(m_sysPath).arg(rq->dir).arg(rq->fileName);
-    //dir 可能有多层，需要循环创建目录 TODO:
+    //dir 可能有多层，需要循环创建目录 TODO:如果不循环创建路径，路径不存在会导致文件打开失败
+    QString tmpDir=file.dir;    // /NetDisk/11
+    QStringList dirList=tmpDir.split("/");  //分割函数 NetDisk 11
+    QString curPath=m_sysPath;
+    bool res=false;
+    for(QString& node:dirList){
+        if(!node.isEmpty()){
+            curPath+="/";
+            curPath+=node;
+            QDir dir;
+            if(!dir.exists(curPath)){
+                res=dir.mkdir(curPath);
+                if(!res){
+                    qDebug() << "创建目录失败:" << curPath << "错误:" << strerror(errno);
+                }
+            }
+        }
+    }
+    // //方法2：直接适用QDir创建
+    // QFileInfo fileInfo(file.absolutePath);
+    // // 获取文件所在目录（不包含文件名）
+    // QString dirPath = fileInfo.absolutePath();
 
-
+    // // 创建目录（包括所有不存在的父目录）
+    // bool success = QDir().mkpath(dirPath);
+    // if (!success) {
+    //     qDebug() << "创建目录失败:" << dirPath;
+    //     return; // 或其他错误处理
+    // }
     //3.打开文件-二进制文本形式打开
     char pathbuf[1000]="";
     Utf8ToGB2312(pathbuf,1000,file.absolutePath);
