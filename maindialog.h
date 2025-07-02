@@ -22,6 +22,7 @@ signals:
     void sig_downloadFolder(int fileid,QString dir);
     void sig_addFolder(QString name,QString dir);
     void sig_changeDir(QString dir);
+    void sig_uploadFolder(QString path,QString dir);
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();
@@ -31,14 +32,14 @@ private slots:
     void on_pb_file_clicked();
     void on_pb_trans_clicked();
     void on_pb_share_clicked();
-    //下载菜单槽
+    //右上角菜单槽
     void on_pb_add_clicked();
     void slot_action_addFolder(bool flag);
     void slot_action_uploadFile(bool flag);
     void slot_action_uploadFolder(bool flag);
     //复选
     void on_tb_file_cellClicked(int row, int column);
-    //文件菜单槽
+    //右键菜单槽
     void on_tb_file_customContextMenuRequested(const QPoint &pos);
     void slot_action_dowloadFile(bool flag);
     void slot_action_shareFile(bool flag);

@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <errhandlingapi.h>
 #include "md5.h"
+#include "qdir.h"
 
 //定义带参数宏计算协议数
 #define NetMap(a) m_netPackMap[a-_DEF_PACK_BASE]
@@ -58,6 +59,8 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_addFolder(QString,QString)));
     connect(m_pMainDialog,SIGNAL(sig_changeDir(QString)),
             this,SLOT(slot_changeDir(QString)));
+    connect(m_pMainDialog,SIGNAL(sig_uploadFolder(QString,QString)),
+            this,SLOT(slot_uploadFolder(QString,QString)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -176,6 +179,7 @@ void CKernel::slot_uploadFile(QString path, QString dir)
 
 void CKernel::slot_getCurFileList()
 {
+    qDebug()<<__func__;
     //获取当前文件列表
     //1.获取文件列表请求
     STRU_GET_FILE_RQ rq;
@@ -229,8 +233,42 @@ void CKernel::slot_changeDir(QString dir)
     //更新当前目录
     m_curDir=dir;
     //刷新文件列表
-    refreshList();
+    slot_getCurFileList();
 }
+#include <QDir>
+#include <QFileInfoList>
+void CKernel::slot_uploadFolder(QString path,QString dir)
+{
+    //上传文件夹
+    qDebug()<<__func__;
+    //1.处理当前文件夹 新建文件夹
+    QFileInfo qfile(path);
+    QDir dr(path);
+    slot_addFolder(qfile.fileName(),dir);
+    //qDebug()<<"folder:"<<qfile.fileName()<<"dir:"<<dir;
+
+    //2.获取文件夹下一层 所有文件路径
+    QFileInfoList lst=dr.entryInfoList();
+    //遍历所有文件
+    QString newDir=dir+qfile.fileName()+"/";//进入文件夹路径
+    for(int i=0;i<lst.size();i++){
+        QFileInfo info=lst.at(i);
+        //如果是. 继续
+        if(info.fileName()==".")continue;
+        //如果是.. 继续
+        if(info.fileName()=="..")continue;
+
+        //如果是文件夹 slot_uploadFolder递归
+        if(info.isDir()){
+            slot_uploadFolder(info.absoluteFilePath(),newDir);
+        }else{
+            //如果是文件 uploadFile 路径-文件的绝对路径 传到的路径dir
+           // qDebug()<<"file path:"<<info.absoluteFilePath()<<"file dir:"<<newDir;
+            slot_uploadFile(info.absoluteFilePath(),newDir);
+        }
+    }
+}
+
 //信息处理函数-------------------------------------------------------------------------------
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {
@@ -358,8 +396,10 @@ void CKernel::slot_dealContentFileRs(uint from, char *data, int len)
         Q_EMIT sig_updateUploadFileProgress(file.timestamp,file.pos);//时间戳判断文件信息
         //判断是否结束
         if(file.pos>=file.size){
-            //刷新列表
-            refreshList();
+            if(file.dir==m_curDir){
+                //刷新列表
+                slot_getCurFileList();
+            }
             //关闭文件
             fclose(file.pFile);
             m_mapTimeToFileinfo.erase(rs->timestamp);
@@ -383,6 +423,8 @@ void CKernel::slot_dealGetListRs(uint from, char *data, int len)
     if(m_curDir!=QString::fromStdString(rs->dir))return;
     //2. 处理每个列表文件数据
     FileInfo file;
+    //在插入列表之前删除原列表
+    m_pMainDialog->slot_deleteAllFileInfo();
     for(int i=0;i<rs->count;i++){
         file.type=rs->fileInfo[i].fileType;
         file.name=rs->fileInfo[i].name;
@@ -506,7 +548,7 @@ void CKernel::slot_dealQuickUploadRs(uint from, char *data, int len)
     m_pMainDialog->slot_insertTbComplete(file,_DEF_UPLOAD);
     //5.刷新当前列表
     if(m_curDir==file.dir){//是当前目录就刷新
-         refreshList();
+        slot_getCurFileList();
     }
     //6.关闭文件信息 删除节点
     fclose(file.pFile);
@@ -658,13 +700,7 @@ void CKernel::setSystemPtah()
     m_sysPath=path;
 }
 
-//刷新当前路径下文件列表
-void CKernel::refreshList()
-{
-    //刷新当前文件列表
-    m_pMainDialog->slot_deleteAllFileInfo();
-    slot_getCurFileList();
-}
+
 
 #ifdef USE_SERVER
 void CKernel::slot_dealServerData(uint from, char *data, int len)

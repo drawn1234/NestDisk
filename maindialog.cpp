@@ -152,7 +152,18 @@ void MainDialog::slot_action_uploadFile(bool flag)
 
 void MainDialog::slot_action_uploadFolder(bool flag)
 {
+     //上传文件夹
+    qDebug()<<__func__;
+    //1.点击，弹出文件选择对话框 选择路径
+    QString path = QFileDialog::getExistingDirectory(this,"打开文件夹","./");
+    //2.是否为空
+    if(path.isEmpty()){
+        return;
+    }
+    //3.过滤 是否正在上传 TODO:
 
+    //4.发信号 上传什么目录下的什么名字的文件夹
+    Q_EMIT sig_uploadFolder(path,ui->lb_path->text());
 }
 
 void MainDialog::slot_insertUploadFile(FileInfo &file)
@@ -284,6 +295,7 @@ void MainDialog::slot_openPath(bool flag){
 
 void MainDialog::slot_deleteAllFileInfo()
 {
+    qDebug()<<__func__;
     //删除所有的文件项
     //ui->tb_file->clear();//清空所有文字-行数不变
     int rows=ui->tb_file->rowCount();
