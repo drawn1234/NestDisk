@@ -190,6 +190,10 @@ void CLogic::uploadFile(sock_fd clientfd, char *szbuf, int nlen)
     file->time=rq->time;
     file->type=rq->fileType;
     file->fileFd=open(cPath,O_CREAT|O_WRONLY|O_TRUNC,0777); //使用linux创建打开文件-读写，创建，清空
+    if(file->fileFd==-1){
+        perror("文件打开失败");
+        return;
+    }
     file->fid;
     file->absolutePath=cPath;
     //4.map存储文件信息
@@ -305,7 +309,6 @@ void CLogic::getFileList(sock_fd clientfd, char *szbuf, int nlen)
         printf("查询数据库失败:%s\n",sql);
         return;
     }
-    if(lststr.size()==0)return;
     //3.保存文件信息
      int rslen=sizeof(STRU_GET_FILE_RS)+sizeof(STRU_FILE_INFO)*count;
     STRU_GET_FILE_RS* rs=(STRU_GET_FILE_RS*)malloc(rslen);
@@ -537,9 +540,9 @@ void CLogic::addFolder(sock_fd clientfd, char *szbuf, int nlen)
     //3.创建目录
     umask(0000);
     ires=mkdir(path,0777);
-    if(ires!=0){
-        printf("创建目录失败");
-        return;
+    if(ires!=0&&errno != EEXIST){
+        perror("创建目录失败");
+        return ;
     }
     //4.发送回复
     rs.result=true;

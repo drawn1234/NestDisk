@@ -1,6 +1,6 @@
 #ifndef CLOGIC_H
 #define CLOGIC_H
-
+#include <errno.h>
 //#define _DEF_NUMBER 1000000000UL
 //宏定义添加UL 避免截断
 #include"TCPKernel.h"
