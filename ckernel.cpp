@@ -156,6 +156,10 @@ void CKernel::slot_uploadFile(QString path, QString dir)
     file.pFile=pFile;
     //2. 上传文件信息保留到map
     int timeStamp=QDateTime::currentDateTime().toString("hhmmsszzz").toInt();
+    //避免时间戳重复
+    while(m_mapTimeToFileinfo.count(timeStamp)>0){
+        timeStamp++;
+    }
     file.timestamp=timeStamp;
     m_mapTimeToFileinfo[timeStamp]=file;
     //3. 发送上传文件请求给服务器
@@ -200,7 +204,12 @@ void CKernel::slot_downloadFile(int fileid, QString dir)
     rq.fileid=fileid;
     string dirtmp=dir.toStdString();
     strcpy(rq.dir,dirtmp.c_str());
-    rq.timestamp=QDateTime::currentDateTime().toString("hhmmsszzz").toInt();
+    int timeStamp=QDateTime::currentDateTime().toString("hhmmsszzz").toInt();
+    //避免时间戳重复
+    while(m_mapTimeToFileinfo.count(timeStamp)>0){
+        timeStamp++;
+    }
+    rq.timestamp=timeStamp;
     rq.userid=m_id;
     //2.发送请求
     sendData((char*)&rq,sizeof(rq));
