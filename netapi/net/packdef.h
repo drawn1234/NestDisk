@@ -370,3 +370,74 @@ struct STRU_QUICK_UPLOAD_RS
     int fileid; //文件id
     int result; //结果
 };
+
+
+///////////////分享文件 ////////////////////
+///分享文件请求
+#define _DEF_PACK_SHARE_FILE_RQ       (_DEF_PACK_BASE + 18 )
+/// 分享文件回复
+#define _DEF_PACK_SHARE_FILE_RS       (_DEF_PACK_BASE + 19 )
+
+//分享文件请求 : 包含 谁 分享 什么目录下面的 哪些文件( 文件id 数组 )  分享时间
+struct STRU_SHARE_FILE_RQ
+{
+    void init(){
+        type = _DEF_PACK_SHARE_FILE_RQ;
+        userid = 0;
+        memset( dir , 0 , sizeof(dir) );
+        memset( shareTime , 0 , sizeof(shareTime) );
+        itemCount = 0;
+    }
+    PackType type;
+    int userid;
+    char dir[_MAX_PATH_SIZE ];
+    char shareTime[_MAX_SIZE];
+    int itemCount;
+    int fileidArray[];
+};
+
+// 收到回复 就刷新分享列表
+struct STRU_SHARE_FILE_RS
+{
+    STRU_SHARE_FILE_RS(): type( _DEF_PACK_SHARE_FILE_RS ),result(0){
+
+    }
+    PackType type;
+    int result;
+};
+
+///////////////刷新分享列表 ////////////////////
+//获取自己的分享请求
+#define _DEF_PACK_MY_SHARE_RQ   (_DEF_PACK_BASE + 20 )
+//获取自己的分享回复
+#define _DEF_PACK_MY_SHARE_RS   (_DEF_PACK_BASE + 21 )
+//获取自己的分享请求  谁获取  考虑加个时间 比如获取半个月的  todo
+struct STRU_MY_SHARE_RQ
+{
+    STRU_MY_SHARE_RQ():type( _DEF_PACK_MY_SHARE_RQ) , userid(0){
+
+    }
+    PackType type;
+    int userid;
+    // 考虑加入时间 获取指定时间范围的分享
+};
+
+//分享文件信息: 名字 大小 分享时间 链接 (密码 todo )
+struct STRU_MY_SHARE_FILE
+{
+    char name[_MAX_PATH_SIZE];
+    int size;
+    char time[_MAX_SIZE];
+    int shareLink;
+};
+
+//获取自己的分享回复  分享文件的列表 文件: 名字 大小 分享时间 链接 (密码 todo )
+struct STRU_MY_SHARE_RS
+{
+    void init() {
+        type = _DEF_PACK_MY_SHARE_RS; itemCount = 0;
+    }
+    PackType type;
+    int itemCount;
+    STRU_MY_SHARE_FILE items[];
+};
