@@ -61,6 +61,8 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_changeDir(QString)));
     connect(m_pMainDialog,SIGNAL(sig_uploadFolder(QString,QString)),
             this,SLOT(slot_uploadFolder(QString,QString)));
+    connect(m_pMainDialog,SIGNAL(sig_shareFile(QVector<int>&,QString)),
+            this,SLOT(slot_shareFile(QVector<int>&,QString)));
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -276,6 +278,27 @@ void CKernel::slot_uploadFolder(QString path,QString dir)
             slot_uploadFile(info.absoluteFilePath(),newDir);
         }
     }
+}
+
+void CKernel::slot_shareFile(QVector<int> &fileidArr, QString dir)
+{
+    //分享文件
+    qDebug()<<__func__;
+    //1.打包数据
+    int packLen=sizeof(STRU_SHARE_FILE_RQ)+sizeof(int)*fileidArr.size();
+    STRU_SHARE_FILE_RQ* rq=(STRU_SHARE_FILE_RQ*)malloc(packLen);
+    strcpy(rq->dir,dir.toUtf8().constData());
+    rq->itemCount=fileidArr.size();
+    rq->userid=m_id;
+    QString shaerTime=QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+    strcpy(rq->shareTime,shaerTime.toStdString().c_str());
+    rq->init();
+    for(int i=0;i<fileidArr.size();i++){
+        rq->fileidArray[i]=fileidArr[i];
+    }
+    //2.发送请求
+    sendData((char*)&rq,sizeof(rq));
+    free(rq);
 }
 
 //信息处理函数-------------------------------------------------------------------------------
