@@ -287,17 +287,17 @@ void CKernel::slot_shareFile(QVector<int> &fileidArr, QString dir)
     //1.打包数据
     int packLen=sizeof(STRU_SHARE_FILE_RQ)+sizeof(int)*fileidArr.size();
     STRU_SHARE_FILE_RQ* rq=(STRU_SHARE_FILE_RQ*)malloc(packLen);
+    rq->init();
     strcpy(rq->dir,dir.toUtf8().constData());
     rq->itemCount=fileidArr.size();
     rq->userid=m_id;
     QString shaerTime=QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     strcpy(rq->shareTime,shaerTime.toStdString().c_str());
-    rq->init();
     for(int i=0;i<fileidArr.size();i++){
         rq->fileidArray[i]=fileidArr[i];
     }
     //2.发送请求
-    sendData((char*)&rq,sizeof(rq));
+    sendData((char*)rq,sizeof(rq));
     free(rq);
 }
 
@@ -611,6 +611,11 @@ void CKernel::slot_dealQuickUploadRs(uint from, char *data, int len)
     //6.关闭文件信息 删除节点
     fclose(file.pFile);
     m_mapTimeToFileinfo.erase(rs->timestamp);
+
+}
+
+void CKernel::slot_dealShareFileRs(uint from, char *data, int len)
+{
 
 }
 
