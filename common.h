@@ -38,7 +38,7 @@ struct FileInfo
         }
         switch(count){
         case 0:
-            res=QString("0.%1KB").arg((int)(size%1024/1024.0*100),2,10,QChar('0'));
+            res=QString("0.%1KB").arg((int)(size/1024.0*1000),3,10,QChar('0'));
             //arg() 参数，宽度 进制 不够宽度填充字符
             break;
         case 1:

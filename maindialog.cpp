@@ -462,7 +462,9 @@ void MainDialog::slot_insertFileInfo(FileInfo& file)
     //2. 插入行数据
     MytablewigetItem* item0=new MytablewigetItem;
     QTableWidgetItem* item1=new QTableWidgetItem(file.time);
-    QTableWidgetItem* item2=new QTableWidgetItem(file.getSize(file.size));
+    QTableWidgetItem* item2=nullptr;
+    if(file.type=="folder")item2=new QTableWidgetItem;
+    else item2=new QTableWidgetItem(file.getSize(file.size));
     item0->slot_setFile(file);
     ui->tb_file->setItem(rows,0,item0);
     ui->tb_file->setItem(rows,1,item1);
