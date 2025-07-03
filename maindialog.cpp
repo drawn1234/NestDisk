@@ -314,6 +314,48 @@ void MainDialog::slot_deleteAllFileInfo()
     }
 }
 
+void MainDialog::slot_deleteAllShare()
+{
+    //删除所有的分享列表
+    qDebug()<<__func__;
+    //name time size link
+    int rows=ui->tb_share->rowCount();
+    QTableWidgetItem* item1;
+    for(int i=rows-1;i>=0;i--){
+        for(int j=0;j<4;j++){
+            item1=ui->tb_share->takeItem(i,j);
+            delete item1;
+            item1=nullptr;
+        }
+        ui->tb_file->removeRow(i);
+    }
+}
+
+void MainDialog::slot_insertAllShare(STRU_MY_SHARE_FILE *shareList, int listCount)
+{
+    //插入所有的分享列表
+    qDebug()<<__func__;
+    //1.循环遍历
+    QTableWidgetItem *item0=nullptr;
+    QTableWidgetItem *item1=nullptr;
+    QTableWidgetItem *item2=nullptr;
+    QTableWidgetItem *item3=nullptr;
+    //name time size link
+     ui->tb_share->setRowCount(listCount);
+    for(int i=0;i<listCount;i++){
+        //1. 新增一行 获取当前行+1 设置行数
+        item0=new QTableWidgetItem(shareList[i].name);
+        item1=new QTableWidgetItem(shareList[i].time);
+        item2=new QTableWidgetItem(FileInfo::getSize(shareList[i].size));
+        item3=new QTableWidgetItem(QString::number(shareList[i].shareLink));
+        //2. 设置这一行的每一列的控件（添加对象）
+        ui->tb_share->setItem(i,0,item0);
+        ui->tb_share->setItem(i,1,item1);
+        ui->tb_share->setItem(i,2,item2);
+        ui->tb_share->setItem(i,3,item3);
+    }
+}
+
 void MainDialog::slot_updateUploadFileProgress(int timestamp, int pos)
 {
     qDebug()<<__func__;

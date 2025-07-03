@@ -52,6 +52,7 @@ private slots:
     void slot_changeDir(QString dir);
     void slot_uploadFolder(QString path,QString dir);
     void slot_shareFile(QVector<int>& fileidArr,QString dir);
+    void slot_getShareList();
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
@@ -65,6 +66,7 @@ private slots:
     void slot_dealAddFolderRs(uint from,char* data,int len);
     void slot_dealQuickUploadRs(uint from,char* data,int len);
     void slot_dealShareFileRs(uint from,char* data,int len);
+    void slot_dealGetShareListRs(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);

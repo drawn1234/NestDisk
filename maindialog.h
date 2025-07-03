@@ -61,6 +61,9 @@ public slots:
     void slot_insertFileInfo(FileInfo& file);
     void slot_openPath(bool flag);
     void slot_deleteAllFileInfo();
+    void slot_deleteAllShare();
+    void slot_insertAllShare(STRU_MY_SHARE_FILE* shareList,int listCount);
+
 private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;

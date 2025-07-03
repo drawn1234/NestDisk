@@ -63,6 +63,7 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_uploadFolder(QString,QString)));
     connect(m_pMainDialog,SIGNAL(sig_shareFile(QVector<int>&,QString)),
             this,SLOT(slot_shareFile(QVector<int>&,QString)));
+
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
     m_pLoginDialog->show();
@@ -297,8 +298,19 @@ void CKernel::slot_shareFile(QVector<int> &fileidArr, QString dir)
         rq->fileidArray[i]=fileidArr[i];
     }
     //2.发送请求
-    sendData((char*)rq,sizeof(rq));
+    sendData((char*)rq,packLen);
     free(rq);
+}
+
+void CKernel::slot_getShareList()
+{
+    //获取分享列表进行刷新
+    qDebug()<<__func__;
+    //1.打包数据
+    STRU_MY_SHARE_RQ rq;
+    rq.userid=m_id;
+    //2.发送请求
+    sendData((char*)&rq,sizeof(rq));
 }
 
 //信息处理函数-------------------------------------------------------------------------------
@@ -371,6 +383,8 @@ void CKernel::slot_dealLoginRs(uint from, char *data, int len)
         //获取根目录下文件列表
         m_curDir="/";
         slot_getCurFileList();
+        //分享列表刷新显示
+        slot_getShareList();
         break;
     }
 }
@@ -616,7 +630,26 @@ void CKernel::slot_dealQuickUploadRs(uint from, char *data, int len)
 
 void CKernel::slot_dealShareFileRs(uint from, char *data, int len)
 {
+    //分享文件回复
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_SHARE_FILE_RS* rs=(STRU_SHARE_FILE_RS*)data;
+    //2.刷新分享列表
+    slot_getShareList();
+}
 
+void CKernel::slot_dealGetShareListRs(uint from, char *data, int len)
+{
+    //添加文件列表回复
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_MY_SHARE_RS* rs=(STRU_MY_SHARE_RS*)data;
+    STRU_MY_SHARE_FILE* shareList=rs->items;
+    int listCount=rs->itemCount;
+    //2.删除所有分享列表
+    m_pMainDialog->slot_deleteAllShare();
+    //3.插入所有列表
+    m_pMainDialog->slot_insertAllShare(shareList,listCount);
 }
 
 
@@ -673,7 +706,8 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_FILE_CONTENT_RQ)=&CKernel::slot_dealContentFileRq;
     NetMap(_DEF_PACK_ADD_FOLDER_RS)=&CKernel::slot_dealAddFolderRs;
     NetMap(_DEF_PACK_QUICK_UPLOAD_RS)=&CKernel::slot_dealQuickUploadRs;
-
+    NetMap(_DEF_PACK_SHARE_FILE_RS)=&CKernel::slot_dealShareFileRs;
+    NetMap(_DEF_PACK_MY_SHARE_RS)=&CKernel::slot_dealGetShareListRs;
 }
 
 #include<QTextCodec>

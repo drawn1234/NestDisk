@@ -398,7 +398,7 @@
       <item>
        <widget class="QStackedWidget" name="sw_page">
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="page_file">
          <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -957,7 +957,7 @@
                <number>0</number>
               </property>
               <item>
-               <widget class="QTableWidget" name="td_share">
+               <widget class="QTableWidget" name="tb_share">
                 <property name="editTriggers">
                  <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
                 </property>
@@ -989,6 +989,11 @@
                 <column>
                  <property name="text">
                   <string>大小</string>
+                 </property>
+                </column>
+                <column>
+                 <property name="text">
+                  <string>分享码</string>
                  </property>
                 </column>
                </widget>
