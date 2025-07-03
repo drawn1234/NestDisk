@@ -11,7 +11,8 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_FILE_HEADER_RS) = &CLogic::downloadFileHeadRs;
     NetPackMap(_DEF_PACK_FILE_CONTENT_RS) = &CLogic::fileContentRs;
     NetPackMap(_DEF_PACK_ADD_FOLDER_RQ) = &CLogic::addFolder;
-
+    NetPackMap(_DEF_PACK_SHARE_FILE_RQ) = &CLogic::shareFile;
+    NetPackMap(_DEF_PACK_MY_SHARE_RQ) = &CLogic::getShareList;
 }
 
 long CLogic::number()
@@ -549,6 +550,98 @@ void CLogic::addFolder(sock_fd clientfd, char *szbuf, int nlen)
     rs.userid=rq->userid;
     rs.timestamp=rq->timestamp;
     SendData(clientfd,(char*)&rs,sizeof (rs));
+}
+
+//分享文件
+void CLogic::shareFile(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_SHARE_FILE_RQ* rq=(STRU_SHARE_FILE_RQ*)szbuf;
+
+    list<string> lststr;
+    char sql[1024]="";
+    bool res=false;
+    int link=0;
+    do{
+        //2.随机生成分享链接-9位
+        link=1+random()%9;//随机1-9
+        link*=100000000;
+        link+=random()%100000000;
+        //3.去重 查链接是否已经存在
+        sprintf(sql,"select s_link from user_file_info where s_link='%d';",link);
+        res=m_sql->SelectMysql(sql,1,lststr);
+        if(!res){
+            printf("查询数据库失败%s\n",sql);
+            return;
+        }
+    }while(lststr.size()>0);
+    //4.遍历所有文件，设置分享链接
+    string dir=rq->dir;
+    int u_id=rq->userid;
+    string shareTime=rq->shareTime;
+    int fid=0;
+    for(int i=0;i<rq->itemCount;i++){
+        fid=rq->fileidArray[i];
+        //根据fid dir userId插入文件信息
+        sprintf(sql,"update t_user_file set s_link='%d',s_linkTime='%s' where u_id='%d' and f_id='%d' and f_dir='%s';",
+                link,shareTime.c_str(),u_id,fid,dir.c_str());
+        m_sql->UpdataMysql(sql);
+        if(!res){
+            printf("更新数据库失败%s\n",sql);
+            return;
+        }
+    }
+    //5.分享文件回复
+    STRU_SHARE_FILE_RS rs;
+    rs.result=true;
+    SendData(clientfd,(char*)&rs,sizeof(rs));
+}
+
+//获取分享列表
+void CLogic::getShareList(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_MY_SHARE_RQ* rq=(STRU_MY_SHARE_RQ*)szbuf;
+    int u_id=rq->userid;
+    //2.查询分享列表
+    int itemCount=0;
+    list<string> lststr;
+    char sql[1024]="";
+    sprintf(sql,"select f_name,f_size,s_linkTime,s_link from user_file_info where u_id='%d' and s_link is not null;",u_id);
+    bool res=m_sql->SelectMysql(sql,4,lststr);
+    if(!res){
+        printf("查询数据库失败%s\n",sql);
+        return;
+    }
+    if(lststr.size()==0)printf("查询结果为空\n");
+    itemCount=lststr.size()/4;
+    //3.发送回复
+    int rsLen=sizeof(STRU_MY_SHARE_RS)+sizeof(STRU_MY_SHARE_FILE)*itemCount;
+    STRU_MY_SHARE_RS* rs=(STRU_MY_SHARE_RS*)malloc(rsLen);
+    rs->init();
+    rs->itemCount=itemCount;
+    //插入回复数据
+    string name="";
+    int size=0;
+    string time="";
+    int link=0;
+    for(int i=0;i<itemCount;i++){
+        name=lststr.front();
+        lststr.pop_front();
+        size=stoi(lststr.front());
+        lststr.pop_front();
+        time=lststr.front();
+        lststr.pop_front();
+        link=stoi(lststr.front());
+        lststr.pop_front();
+        strcpy(rs->items[i].name,name.c_str());
+        rs->items[i].size=size;
+        strcpy(rs->items[i].time,time.c_str());
+        rs->items[i].shareLink=link;
+    }
+    SendData(clientfd,(char*)rs,rsLen);
 }
 
 

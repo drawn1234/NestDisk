@@ -45,6 +45,10 @@ public:
     void fileContentRs(sock_fd clientfd, char*szbuf, int nlen);
     //新建文件夹
     void addFolder(sock_fd clientfd, char*szbuf, int nlen);
+    //分享文件
+    void shareFile(sock_fd clientfd, char*szbuf, int nlen);
+    //获取分享列表
+    void getShareList(sock_fd clientfd, char*szbuf, int nlen);
     /*******************************************/
 
 private:
