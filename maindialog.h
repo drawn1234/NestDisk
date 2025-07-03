@@ -23,6 +23,7 @@ signals:
     void sig_addFolder(QString name,QString dir);
     void sig_changeDir(QString dir);
     void sig_uploadFolder(QString path,QString dir);
+    void sig_shareFile(QVector<int>& fileidArr,QString dir);
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();

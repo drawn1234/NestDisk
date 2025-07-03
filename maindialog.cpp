@@ -478,7 +478,23 @@ void MainDialog::slot_action_dowloadFile(bool flag)
 
 void MainDialog::slot_action_shareFile(bool flag)
 {
+    //分享文件
     qDebug()<<__func__;
+    //1.申请数组
+    QVector<int> fileidArr;
+    //2.遍历所有项
+    int rows=ui->tb_file->rowCount();
+    MytablewigetItem* item0=nullptr;
+    for(int i=0;i<rows;i++){
+        item0=(MytablewigetItem*)ui->tb_file->item(i,0);
+        //3.看是否打勾
+        if(item0->checkState()==Qt::Checked){
+            //4.添加到数组中
+            fileidArr.push_back(item0->m_file.fileid);
+        }
+    }
+    //5.发送信号
+    Q_EMIT sig_shareFile(fileidArr,ui->lb_path->text());
 }
 
 void MainDialog::slot_action_deleteFile(bool flag)
