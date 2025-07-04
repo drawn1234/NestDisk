@@ -68,6 +68,7 @@ private slots:
     void slot_dealQuickUploadRs(uint from,char* data,int len);
     void slot_dealShareFileRs(uint from,char* data,int len);
     void slot_dealGetShareListRs(uint from,char* data,int len);
+    void slot_dealgetShareByLinkRs(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);

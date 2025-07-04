@@ -669,6 +669,21 @@ void CKernel::slot_dealGetShareListRs(uint from, char *data, int len)
     m_pMainDialog->slot_insertAllShare(shareList,listCount);
 }
 
+void CKernel::slot_dealgetShareByLinkRs(uint from, char *data, int len)
+{
+    //根据分享码获取文件回复
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_GET_SHARE_RS* rs=(STRU_GET_SHARE_RS*)data;
+    //2.判断结果
+    if(rs->result==false){
+        QMessageBox::about(m_pMainDialog,"提示","分享码不存在");
+        return;
+    }
+    //3.刷新当前文件列表
+    if(rs->dir==m_curDir)slot_getCurFileList();
+}
+
 
 //工具函数------------------------------------------------------------------------
 
@@ -725,6 +740,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_QUICK_UPLOAD_RS)=&CKernel::slot_dealQuickUploadRs;
     NetMap(_DEF_PACK_SHARE_FILE_RS)=&CKernel::slot_dealShareFileRs;
     NetMap(_DEF_PACK_MY_SHARE_RS)=&CKernel::slot_dealGetShareListRs;
+    NetMap(_DEF_PACK_GET_SHARE_RS)=&CKernel::slot_dealgetShareByLinkRs;
 }
 
 #include<QTextCodec>
