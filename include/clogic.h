@@ -49,7 +49,11 @@ public:
     void shareFile(sock_fd clientfd, char*szbuf, int nlen);
     //获取分享列表
     void getShareList(sock_fd clientfd, char*szbuf, int nlen);
-    /*******************************************/
+    //根据分享码获取分享
+    void getShareByLink(sock_fd clientfd, char*szbuf, int nlen);
+    /*******************工具函数************************/
+    //根据分享文件夹向目标文件夹插入数据
+    void addFolderByShareDir(string dirDest,int userDestId,string dirSource,int userSourceId,string time);
 
 private:
     TcpKernel* m_pKernel;

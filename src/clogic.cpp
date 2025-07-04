@@ -13,6 +13,7 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_ADD_FOLDER_RQ) = &CLogic::addFolder;
     NetPackMap(_DEF_PACK_SHARE_FILE_RQ) = &CLogic::shareFile;
     NetPackMap(_DEF_PACK_MY_SHARE_RQ) = &CLogic::getShareList;
+    NetPackMap(_DEF_PACK_GET_SHARE_RQ) = &CLogic::getShareByLink;
 }
 
 long CLogic::number()
@@ -419,6 +420,7 @@ void CLogic::downloadFile(sock_fd clientfd, char *szbuf, int nlen)
     strcpy(rqH.fileType,file->type.c_str());
     SendData(clientfd,(char*)&rqH,sizeof(rqH));
 }
+
 //下载文件夹
 void CLogic::downloadFileFolder(sock_fd clientfd, char *szbuf, int nlen)
 {
@@ -642,6 +644,121 @@ void CLogic::getShareList(sock_fd clientfd, char *szbuf, int nlen)
         rs->items[i].shareLink=link;
     }
     SendData(clientfd,(char*)rs,rsLen);
+}
+//根据分享码获取文件
+void CLogic::getShareByLink(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_GET_SHARE_RQ* rq=(STRU_GET_SHARE_RQ*)szbuf;
+    STRU_GET_SHARE_RS rs;
+    int link=rq->shareLink;
+    int userDestId=rq->userid;
+    string dirDest=rq->dir;
+    string time=rq->time;
+    //2.根据分享码获取分享文件列表
+    list<string> lststr;
+    char sql[1024]="";
+    //f_type u_id(分享人的),f_id,f_dir(分享人的),f_name,f_uploadTime
+    sprintf(sql,"select u_id,f_id,f_dir,f_name,f_type from user_file_info where s_link='%d';",link);
+    bool res= m_sql->SelectMysql(sql,5,lststr);
+    if(!res){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+    int listCount=lststr.size()/5;
+    if(lststr.size()==0){
+        rs.result=false;
+        SendData(clientfd,(char*)&rs,sizeof(rs));
+        return;
+    }
+    //3.遍历文件列表
+    int userSourceId=0;
+    int fid=0;
+    string dirSource="";
+    string name="";
+    string type="";
+   while(lststr.size()>0){
+        userSourceId=stoi(lststr.front());
+        lststr.pop_front();
+        fid=stoi(lststr.front());
+        lststr.pop_front();
+        dirSource=lststr.front();
+        lststr.pop_front();
+        name=lststr.front();
+        lststr.pop_front();
+        type=lststr.front();
+        lststr.pop_front();
+        //文件-插入用户关系表
+        //文件夹-遍历所有文件，插入用户关系表
+        sprintf(sql,"insert into t_user_file(u_id,f_id,f_dir,f_name,f_uploadTime) values('%d','%d','%s','%s','%s');",
+                userDestId,fid,dirDest.c_str(),name.c_str(),time.c_str());
+        res=m_sql->UpdataMysql(sql);
+        if(!res){
+            printf("更新数据库失败%s\n",sql);
+            return;
+        }
+        if(type=="folder"){
+            //插入用户关系表 根据分享人目录遍历 获取人目录插入
+            dirDest=dirDest+name+"/";
+            dirSource=dirSource+name+"/";
+            //根据新路径 查询分享人文件夹下文件
+            //遍历列表-递归
+            addFolderByShareDir(dirDest,userDestId,dirSource,userSourceId,time);
+
+        }
+    }
+    //4.发送回复
+    rs.result=true;
+    strcpy(rs.dir,rq->dir);
+    SendData(clientfd,(char*)&rs,sizeof(rs));
+}
+
+ //根据源用户目录，向目标用户目录插入文件
+void CLogic::addFolderByShareDir(string dirDest, int userDestId, string dirSource, int userSourceId,string time)
+{
+    printf("addFolderByShareDir\n");
+    //1..根据目录查询列表
+    list<string> lststr;
+    char sql[1024]="";
+    //f_type,f_id,f_name
+    sprintf(sql,"select f_id,f_name,f_type from user_file_info where f_dir='%s';",dirSource.c_str());
+    bool res= m_sql->SelectMysql(sql,3,lststr);
+    if(!res){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+    if(lststr.size()==0){
+        printf("当前文件夹为空:%s\n",dirDest.c_str());
+    }
+    //3.遍历文件列表
+    int fid=0;
+    string name="";
+    string type="";
+   while(lststr.size()>0){
+        fid=stoi(lststr.front());
+        lststr.pop_front();
+        name=lststr.front();
+        lststr.pop_front();
+        type=lststr.front();
+        lststr.pop_front();
+        //文件-插入用户关系表
+        //文件夹-遍历所有文件，插入用户关系表
+        sprintf(sql,"insert into t_user_file(u_id,f_id,f_dir,f_name,f_uploadTime) values('%d','%d','%s','%s','%s');",
+                userDestId,fid,dirDest.c_str(),name.c_str(),time.c_str());
+        res=m_sql->UpdataMysql(sql);
+        if(!res){
+            printf("更新数据库失败%s\n",sql);
+            return;
+        }
+        if(type=="folder"){
+            //插入用户关系表 根据分享人目录遍历 获取人目录插入
+            string newDirDest=dirDest+name+"/";
+            string newDirSource=dirSource+name+"/";
+             //遍历列表-递归
+            addFolderByShareDir(newDirDest,userDestId,newDirSource,userSourceId,time);
+        }
+    }
 }
 
 
