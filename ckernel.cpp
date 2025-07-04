@@ -63,6 +63,8 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_uploadFolder(QString,QString)));
     connect(m_pMainDialog,SIGNAL(sig_shareFile(QVector<int>&,QString)),
             this,SLOT(slot_shareFile(QVector<int>&,QString)));
+    connect(m_pMainDialog,SIGNAL(sig_getShareByLink(QString,int)),
+            this,SLOT(slot_getShareByLink(QString,int)));
 
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
@@ -310,6 +312,21 @@ void CKernel::slot_getShareList()
     STRU_MY_SHARE_RQ rq;
     rq.userid=m_id;
     //2.发送请求
+    sendData((char*)&rq,sizeof(rq));
+}
+
+void CKernel::slot_getShareByLink(QString dir, int link)
+{
+    //根据分享码获取文件
+    qDebug()<<__func__;
+    //1.打包数据
+    STRU_GET_SHARE_RQ rq;
+    rq.userid=m_id;
+    rq.shareLink=link;
+    strcpy(rq.dir,dir.toUtf8().constData());
+    QString time=QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+    strcpy(rq.time,time.toStdString().c_str());
+    //2.发送分享请求
     sendData((char*)&rq,sizeof(rq));
 }
 

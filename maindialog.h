@@ -24,6 +24,7 @@ signals:
     void sig_changeDir(QString dir);
     void sig_uploadFolder(QString path,QString dir);
     void sig_shareFile(QVector<int>& fileidArr,QString dir);
+    void sig_getShareByLink(QString dir,int link);
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();
@@ -45,6 +46,7 @@ private slots:
     void slot_action_dowloadFile(bool flag);
     void slot_action_shareFile(bool flag);
     void slot_action_deleteFile(bool flag);
+    void slot_action_getShare(bool flag);
     void on_tb_file_cellDoubleClicked(int row, int column);
 
     void on_pb_last_clicked();

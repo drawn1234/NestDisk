@@ -441,3 +441,38 @@ struct STRU_MY_SHARE_RS
     int itemCount;
     STRU_MY_SHARE_FILE items[];
 };
+
+/////////////////////////////获取分享//////////////////////////////////
+//获取分享请求
+#define _DEF_PACK_GET_SHARE_RQ       (_DEF_PACK_BASE + 22 )
+//获取分享回复
+#define _DEF_PACK_GET_SHARE_RS       (_DEF_PACK_BASE + 23 )
+
+//获取分享
+struct STRU_GET_SHARE_RQ
+{
+    STRU_GET_SHARE_RQ():type(_DEF_PACK_GET_SHARE_RQ)
+    ,userid(0), shareLink(0){
+        memset(dir , 0 , sizeof(dir));
+        memset(time , 0 , sizeof(time));
+    }
+    PackType type;
+    int userid;
+    int shareLink; // 9位 首位是1-9 数字
+    char dir[_MAX_PATH_SIZE];
+    char time[_MAX_SIZE];
+    //直接加载这个路径下面
+};
+
+//获取分享回复 :收到刷新
+struct STRU_GET_SHARE_RS
+{
+    STRU_GET_SHARE_RS():type(_DEF_PACK_GET_SHARE_RS)
+    ,result(0) {
+        memset(dir , 0 , sizeof(dir));
+    }
+    PackType type;
+    int result;
+    char dir[_MAX_PATH_SIZE];
+};
+

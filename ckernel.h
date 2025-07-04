@@ -53,6 +53,7 @@ private slots:
     void slot_uploadFolder(QString path,QString dir);
     void slot_shareFile(QVector<int>& fileidArr,QString dir);
     void slot_getShareList();
+    void slot_getShareByLink(QString dir,int link);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);

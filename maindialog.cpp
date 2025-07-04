@@ -42,6 +42,7 @@ MainDialog::MainDialog(QWidget *parent)
     QAction* action_shareFile=new QAction("分享文件");
     QAction* action_deleteFile=new QAction("删除文件");
     QAction* action_star=new QAction("收藏");
+    QAction* action_getShare=new QAction("获取分享");
 
     //2.添加菜单项
     m_menuFileInfo.addAction(action_addFolder);
@@ -53,11 +54,14 @@ MainDialog::MainDialog(QWidget *parent)
     m_menuFileInfo.addAction(action_deleteFile);
     m_menuFileInfo.addSeparator();
     m_menuFileInfo.addAction(action_star);
+    m_menuFileInfo.addSeparator();
+    m_menuFileInfo.addAction(action_getShare);
 
     //3. 绑定菜单项槽函数
     connect(action_downloadFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_dowloadFile(bool)));
     connect(action_shareFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_shareFile(bool)));
     connect(action_deleteFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_deleteFile(bool)));
+    connect(action_getShare,SIGNAL(triggered(bool)),this,SLOT(slot_action_getShare(bool)));
 
 }
 
@@ -544,6 +548,26 @@ void MainDialog::slot_action_shareFile(bool flag)
 void MainDialog::slot_action_deleteFile(bool flag)
 {
     qDebug()<<__func__;
+}
+
+void MainDialog::slot_action_getShare(bool flag)
+{
+    //右键菜单获取分享
+    qDebug()<<__func__;
+    //1.弹窗 输入分享码
+    QString text=QInputDialog::getText(this,"获取分享","输入分享码");
+    //2.过滤-9位 1-9数字
+    QString textmp=text;
+    int link=text.toInt();
+    if(textmp.remove(" ").isEmpty()||text.isEmpty()){
+        QMessageBox::about(this,"提示","输入不能为空");
+        return;
+    }else if(text.length()!=9||link<100000000||link>1000000000){
+        QMessageBox::about(this,"提示","分享码必须为9位1-9数字");
+        return;
+    }
+    //3.发送信号 什么目录下面 什么分享码
+    Q_EMIT sig_getShareByLink(ui->lb_path->text(),link);
 }
 
 
