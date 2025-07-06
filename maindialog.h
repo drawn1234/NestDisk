@@ -25,6 +25,7 @@ signals:
     void sig_uploadFolder(QString path,QString dir);
     void sig_shareFile(QVector<int>& fileidArr,QString dir);
     void sig_getShareByLink(QString dir,int link);
+    void sig_deleteFile(QVector<int>& fileidArr,QString dir);
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();

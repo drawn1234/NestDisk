@@ -65,6 +65,8 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_shareFile(QVector<int>&,QString)));
     connect(m_pMainDialog,SIGNAL(sig_getShareByLink(QString,int)),
             this,SLOT(slot_getShareByLink(QString,int)));
+    connect(m_pMainDialog,SIGNAL(sig_deleteFile(QVector<int>&,QString)),
+            this,SLOT(slot_deleteFile(QVector<int>&,QString)));
 
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
@@ -341,6 +343,24 @@ void CKernel::slot_getShareByLink(QString dir, int link)
     sendData((char*)&rq,sizeof(rq));
 }
 
+void CKernel::slot_deleteFile(QVector<int>& fileidArr,QString dir)
+{
+    //删除文件
+    qDebug()<<__func__;
+    //1.打包数据
+    int packLen=sizeof(STRU_DELETE_FILE_RQ)+sizeof(int)*fileidArr.size();
+    STRU_DELETE_FILE_RQ* rq=(STRU_DELETE_FILE_RQ*)malloc(packLen);
+    rq->init();
+    strcpy(rq->dir,dir.toUtf8().constData());
+    rq->fileCount=fileidArr.size();
+    rq->userid=m_id;
+    for(int i=0;i<fileidArr.size();i++){
+        rq->fileidArray[i]=fileidArr[i];
+    }
+    //2.发送请求
+    sendData((char*)rq,packLen);
+    free(rq);
+}
 //信息处理函数-------------------------------------------------------------------------------
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {
@@ -723,6 +743,22 @@ void CKernel::slot_dealAddFolderRq(uint from, char *data, int len)
     }
 }
 
+void CKernel::slot_dealDeleteFileRs(uint from, char *data, int len)
+{
+    //处理删除文件回复
+    qDebug()<<__func__;
+    //分享文件回复
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_GET_SHARE_RS* rs=(STRU_GET_SHARE_RS*)data;
+    //2.刷新文件列表
+    if(rs->result==true&&rs->dir==m_curDir){
+        slot_getCurFileList();
+    }
+    //3.待做 刷新回收站列表
+    //slot_getDeleteList();
+}
+
 
 
 //工具函数------------------------------------------------------------------------
@@ -782,6 +818,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_MY_SHARE_RS)=&CKernel::slot_dealGetShareListRs;
     NetMap(_DEF_PACK_GET_SHARE_RS)=&CKernel::slot_dealgetShareByLinkRs;
     NetMap(_DEF_PACK_ADD_FOLDER_RQ)=&CKernel::slot_dealAddFolderRq;
+    NetMap(_DEF_PACK_DELETE_FILE_RS)=&CKernel::slot_dealDeleteFileRs;
 
 }
 

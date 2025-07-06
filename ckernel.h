@@ -55,6 +55,7 @@ private slots:
     void slot_shareFile(QVector<int>& fileidArr,QString dir);
     void slot_getShareList();
     void slot_getShareByLink(QString dir,int link);
+    void slot_deleteFile(QVector<int>& fileidArr,QString dir);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
@@ -71,6 +72,7 @@ private slots:
     void slot_dealGetShareListRs(uint from,char* data,int len);
     void slot_dealgetShareByLinkRs(uint from,char* data,int len);
     void slot_dealAddFolderRq(uint from,char* data,int len);
+    void slot_dealDeleteFileRs(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);

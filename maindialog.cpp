@@ -551,6 +551,28 @@ void MainDialog::slot_action_shareFile(bool flag)
 void MainDialog::slot_action_deleteFile(bool flag)
 {
     qDebug()<<__func__;
+    //1.弹窗确认
+    if(QMessageBox::question(this,"提示","是否删除")
+        ==QMessageBox::Yes){
+        //遍历所有选中的文件-发送信号删除
+        //1.申请数组
+        QVector<int> fileidArr;
+        //2.遍历所有项
+        int rows=ui->tb_file->rowCount();
+        MytablewigetItem* item0=nullptr;
+        for(int i=0;i<rows;i++){
+            item0=(MytablewigetItem*)ui->tb_file->item(i,0);
+            //3.看是否打勾
+            if(item0->checkState()==Qt::Checked){
+                //4.添加到数组中
+                fileidArr.push_back(item0->m_file.fileid);
+            }
+        }
+        //5.发送信号
+        Q_EMIT sig_deleteFile(fileidArr,ui->lb_path->text());
+    }
+
+
 }
 
 void MainDialog::slot_action_getShare(bool flag)
