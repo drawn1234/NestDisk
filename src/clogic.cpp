@@ -14,6 +14,8 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_SHARE_FILE_RQ) = &CLogic::shareFile;
     NetPackMap(_DEF_PACK_MY_SHARE_RQ) = &CLogic::getShareList;
     NetPackMap(_DEF_PACK_GET_SHARE_RQ) = &CLogic::getShareByLink;
+    NetPackMap(_DEF_PACK_DELETE_FILE_RQ) = &CLogic::deleteFile;
+
 }
 
 long CLogic::number()
@@ -618,7 +620,7 @@ void CLogic::shareFile(sock_fd clientfd, char *szbuf, int nlen)
         //根据fid dir userId插入文件信息
         sprintf(sql,"update t_user_file set s_link='%d',s_linkTime='%s' where u_id='%d' and f_id='%d' and f_dir='%s';",
                 link,shareTime.c_str(),u_id,fid,dir.c_str());
-        m_sql->UpdataMysql(sql);
+        res=m_sql->UpdataMysql(sql);
         if(!res){
             printf("更新数据库失败%s\n",sql);
             return;
@@ -744,6 +746,55 @@ void CLogic::getShareByLink(sock_fd clientfd, char *szbuf, int nlen)
     SendData(clientfd,(char*)&rs,sizeof(rs));
 }
 
+//删除文件
+void CLogic::deleteFile(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_DELETE_FILE_RQ* rq=(STRU_DELETE_FILE_RQ*)szbuf;
+
+    list<string> lststr;
+    char sql[1024]="";
+    int res=false;
+    //2.遍历所有文件
+    string dir=rq->dir;
+    int u_id=rq->userid;
+    int fid=0;
+    string fileType="";
+    string name="";
+    string path="";
+    for(int i=0;i<rq->fileCount;i++){
+        fid=rq->fileidArray[i];
+        //3.查询文件类型
+        sprintf(sql,"select f_type,f_name,f_path from user_file_info where f_id='%d' and u_id='%d' and f_dir='%s';",
+                fid,u_id,dir.c_str());
+        res=m_sql->SelectMysql(sql,3,lststr);
+        if(!res){
+            printf("查询数据库失败%s\n",sql);
+            return;
+        }
+        //4.根据文件类型删除文件关系
+        fileType=lststr.front();
+        lststr.pop_front();
+        name=lststr.front();
+        lststr.pop_front();
+        path=lststr.front();
+        lststr.pop_front();
+        if(fileType=="file"){
+            //删除文件
+            deleteFileById(u_id,fid,dir,path);
+        }else if(fileType=="folder"){
+            //删除文件夹
+            deleteFolderById(u_id,fid,dir,name);
+        }
+    }
+    //5.分享文件回复
+    STRU_DELETE_FILE_RS rs;
+    rs.result=true;
+    strcpy(rs.dir,rq->dir);
+    SendData(clientfd,(char*)&rs,sizeof(rs));
+}
+
 
 
 
@@ -846,6 +897,88 @@ void CLogic::downloadFolderByDir(int timeStamp, int userid, int fid, string dir,
         }else if(fileType=="folder"){
             //递归调用函数
             downloadFolderByDir(newTimestamp,userid,fileid,curDir,fileName,clientfd);
+        }
+    }
+
+}
+//删除文件
+void CLogic::deleteFileById(int u_id, int f_id, string dir,string path)
+{
+    printf("deleteFileById:%s\n",path.c_str());
+    list<string> lststr;
+    char sql[1024]="";
+    int res=false;
+
+    //1.删除
+    sprintf(sql,"delete from  t_user_file where u_id='%d' and f_id='%d' and f_dir='%s' ;",
+            u_id,f_id,dir.c_str());
+    res=m_sql->UpdataMysql(sql);
+    if(!res){
+        printf("更新数据库失败%s\n",sql);
+        return;
+    }
+    //2.查询引用计数,路径
+    sprintf(sql,"select f_count from t_file where  f_id='%d' ;",f_id);
+    res=m_sql->SelectMysql(sql,1,lststr);
+    if(!res){
+        printf("查询数据库失败%s\n",sql);
+        return;
+    }
+    //3.如果引用计数为0文件信息被删除
+    if(lststr.size()==0){
+        // 删除本地文件
+        if (remove(path.c_str()) != 0) {  // 使用 remove 函数删除文件
+            perror("删除本地文件失败");
+        }
+    }
+}
+//删除文件夹
+void CLogic::deleteFolderById(int u_id, int f_id, string dir,string name)
+{
+    printf("deleteFolderById:%s/%s\n",dir.c_str(),name.c_str());
+    //1.删除文件关系
+    list<string> lststr;
+    char sql[1024]="";
+    int res=false;
+    sprintf(sql,"delete from  t_user_file where u_id='%d' and f_id='%d' and f_dir='%s' ;",
+            u_id,f_id,dir.c_str());
+    res=m_sql->UpdataMysql(sql);
+    if(!res){
+        printf("更新数据库失败%s\n",sql);
+        return;
+    }
+    //2.拼接路径
+    string curDir=dir+name+"/";
+    //3.查询列表文件
+    lststr.clear();
+    sprintf(sql,"select f_type,f_name,f_path from user_file_info where f_id='%d' and u_id='%d' and f_dir='%s';",
+            f_id,u_id,dir.c_str());
+    res=m_sql->SelectMysql(sql,3,lststr);
+    if(!res){
+        printf("查询数据库失败%s\n",sql);
+        return;
+    }
+    int fid=0;
+    string fileType="";
+    string fileName="";
+    //3.递归删除文件关系
+    while(lststr.size()>0){
+        fid=stoi(lststr.front());
+        lststr.pop_front();
+        fileType=lststr.front();
+        lststr.pop_front();
+        fileName=lststr.front();
+        lststr.pop_front();
+        if(fileType=="file"){
+            sprintf(sql,"delete from  t_user_file where u_id='%d' and f_id='%d' and f_dir='%s' ;",
+                    u_id,fid,dir.c_str());
+            res=m_sql->UpdataMysql(sql);
+            if(!res){
+                printf("更新数据库失败%s\n",sql);
+                return;
+            }
+        }else if(fileType=="folder"){
+               deleteFolderById(u_id,fid,curDir,fileName);
         }
     }
 

@@ -51,12 +51,18 @@ public:
     void getShareList(sock_fd clientfd, char*szbuf, int nlen);
     //根据分享码获取分享
     void getShareByLink(sock_fd clientfd, char*szbuf, int nlen);
+    //删除文件
+    void deleteFile(sock_fd clientfd, char*szbuf, int nlen);
 
     /*******************工具函数************************/
     //根据分享文件夹向目标文件夹插入数据
     void addFolderByShareDir(string dirDest,int userDestId,string dirSource,int userSourceId,string time);
     //根据文件夹路径下载文件夹
     void downloadFolderByDir(int timeStamp,int userid,int fid,string dir,string name,int clientfd);
+    //根据id删除单独文件
+    void deleteFileById(int u_id,int f_id,string dir,string path);
+    //根据id删除文件夹
+    void deleteFolderById(int u_id,int f_id,string dir,string name);
 private:
     TcpKernel* m_pKernel;
     CMysql * m_sql;
