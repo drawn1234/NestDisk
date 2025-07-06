@@ -224,6 +224,17 @@ void CKernel::slot_downloadFolder(int fileid, QString dir)
 {
     //下载文件夹请求
     qDebug()<<__func__;
+    //1.打包
+    STRU_DOWNLOAD_FOLDER_RQ rq;
+    strcpy(rq.dir,dir.toUtf8().constData());
+    rq.fileid=fileid;
+    rq.userid=m_id;
+    rq.timestamp=QDateTime::currentDateTime().toString("hhssmmzzz").toInt();
+    while(m_mapTimeToFileinfo.count(rq.timestamp)>0){
+        rq.timestamp++;
+    }
+    //2.发送请求
+    sendData((char*)&rq,sizeof(rq));
 }
 
 void CKernel::slot_addFolder(QString name, QString dir)
@@ -559,6 +570,7 @@ void CKernel::slot_dealFileHeadRq(uint from, char *data, int len)
     //保存下载信息到空间 TODO:
     m_pMainDialog->slot_insertDownloadFile(file);
     //4.保存到map
+
     m_mapTimeToFileinfo[rq->timestamp]=file;
     //5.发送文件头回复
     rs.fileid=rq->fileid;
@@ -684,6 +696,34 @@ void CKernel::slot_dealgetShareByLinkRs(uint from, char *data, int len)
     if(rs->dir==m_curDir)slot_getCurFileList();
 }
 
+void CKernel::slot_dealAddFolderRq(uint from, char *data, int len)
+{
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_ADD_FOLDER_RQ* rq=(STRU_ADD_FOLDER_RQ*)data;
+    QString dir=rq->dir;
+
+    //2.创建路径
+    QString tmpDir=dir;    // /NetDisk/11
+    QStringList dirList=tmpDir.split("/");  //分割函数 NetDisk 11
+    QString curPath=m_sysPath;
+    bool res=false;
+    for(QString& node:dirList){
+        if(!node.isEmpty()){
+            curPath+="/";
+            curPath+=node;
+            QDir dir;
+            if(!dir.exists(curPath)){
+                res=dir.mkdir(curPath);
+                if(!res){
+                    qDebug() << "创建目录失败:" << curPath << "错误:" << strerror(errno);
+                }
+            }
+        }
+    }
+}
+
+
 
 //工具函数------------------------------------------------------------------------
 
@@ -741,6 +781,8 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_SHARE_FILE_RS)=&CKernel::slot_dealShareFileRs;
     NetMap(_DEF_PACK_MY_SHARE_RS)=&CKernel::slot_dealGetShareListRs;
     NetMap(_DEF_PACK_GET_SHARE_RS)=&CKernel::slot_dealgetShareByLinkRs;
+    NetMap(_DEF_PACK_ADD_FOLDER_RQ)=&CKernel::slot_dealAddFolderRq;
+
 }
 
 #include<QTextCodec>

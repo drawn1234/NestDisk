@@ -360,6 +360,8 @@ void MainDialog::slot_insertAllShare(STRU_MY_SHARE_FILE *shareList, int listCoun
     }
 }
 
+
+
 void MainDialog::slot_updateUploadFileProgress(int timestamp, int pos)
 {
     qDebug()<<__func__;
@@ -507,6 +509,7 @@ void MainDialog::slot_action_dowloadFile(bool flag)
     for(int i=0;i<rows;i++){
         //看选中的文件项
         item0=(MytablewigetItem*)ui->tb_file->item(i,0);
+
         if(item0->checkState()==Qt::Checked){
             //列表中有这个文件，不能开始 过滤
 

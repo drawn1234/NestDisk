@@ -31,6 +31,7 @@ signals:
     void sig_updateUploadFileProgress(int timestamp,int pos);
     void sig_updateDownloadFileProgress(int timestamp,int pos);
     void sig_insertFileInfo(FileInfo& file);
+
 public:
     //获取对象的静态方法-全局创建/堆区创建
     static CKernel* GetInstance(){
@@ -69,6 +70,7 @@ private slots:
     void slot_dealShareFileRs(uint from,char* data,int len);
     void slot_dealGetShareListRs(uint from,char* data,int len);
     void slot_dealgetShareByLinkRs(uint from,char* data,int len);
+    void slot_dealAddFolderRq(uint from,char* data,int len);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);
