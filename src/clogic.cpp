@@ -405,6 +405,11 @@ void CLogic::downloadFile(sock_fd clientfd, char *szbuf, int nlen)
         int64_t user_time=userid*number()+timestamp;
         //存入map
         m_mapTimstampToFileinfo.insert(user_time,file);
+        if(!m_mapTimstampToFileinfo.IsExist(user_time)) {
+            printf("存入map失败\n");
+            return;
+        }
+
 
     }else{//没有文件信息-返回
         //发送文件回复
@@ -425,6 +430,31 @@ void CLogic::downloadFile(sock_fd clientfd, char *szbuf, int nlen)
 void CLogic::downloadFileFolder(sock_fd clientfd, char *szbuf, int nlen)
 {
     _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_DOWNLOAD_FOLDER_RQ*rq =(STRU_DOWNLOAD_FOLDER_RQ*)szbuf;
+    //2. 遍历该文件夹下所有文件
+    int timestamp=rq->timestamp;
+    int userid=rq->userid;
+    int fid=rq->fileid;
+    string dir=rq->dir;
+    //3.查询文件信息-name
+    list<string> lststr;
+    char sql[1024]="";
+    sprintf(sql,"select f_name from user_file_info where u_id='%d' and f_id='%d' and f_dir='%s';"
+            ,userid,fid,dir.c_str());
+    bool res=m_sql->SelectMysql(sql,1,lststr);
+    if(!res){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+    if(lststr.size()<=0){
+        printf("未查询到文件name信息");
+        return;
+    }
+    string name=lststr.front();
+
+    //5.下载文件夹
+    downloadFolderByDir(timestamp,userid,fid,dir,name,clientfd);
 }
 //文件头回复
 void CLogic::downloadFileHeadRs(sock_fd clientfd, char *szbuf, int nlen)
@@ -714,6 +744,12 @@ void CLogic::getShareByLink(sock_fd clientfd, char *szbuf, int nlen)
     SendData(clientfd,(char*)&rs,sizeof(rs));
 }
 
+
+
+
+
+
+//-------------------工具函数-------------------------------------------------------
  //根据源用户目录，向目标用户目录插入文件
 void CLogic::addFolderByShareDir(string dirDest, int userDestId, string dirSource, int userSourceId,string time)
 {
@@ -758,7 +794,63 @@ void CLogic::addFolderByShareDir(string dirDest, int userDestId, string dirSourc
              //遍历列表-递归
             addFolderByShareDir(newDirDest,userDestId,newDirSource,userSourceId,time);
         }
-    }
+   }
 }
+//根据文件夹信息下载文件夹
+void CLogic::downloadFolderByDir(int timeStamp, int userid, int fid, string dir,string name,int clientfd)
+{
+    printf("downloadFolderByDir:%s\n",dir.c_str());
+    //1.拼接路径
+    string curDir=dir+name+"/";
+    //给客户端发送信息新建文件夹
+    STRU_ADD_FOLDER_RQ rqFolder;
+    strcpy(rqFolder.dir,curDir.c_str());
+    SendData(clientfd,(char*)&rqFolder,sizeof(rqFolder));
+    //2.遍历所有文件
+    list<string> lststr;
+    char sql[1024]="";
+    sprintf(sql,"select f_type,f_id,f_name from user_file_info where u_id='%d' and f_dir='%s';"
+            ,userid,curDir.c_str());
+    bool res=m_sql->SelectMysql(sql,3,lststr);
+    if(!res){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+    FileInfo* file;
+    string fileType="";
+    int fileid=0;
+    string fileName="";
+    while(lststr.size()>0){
+        fileType=lststr.front();
+        lststr.pop_front();
+        fileid=stoi(lststr.front());
+        lststr.pop_front();
+        fileName=lststr.front();
+        lststr.pop_front();
+        //为每一个文件创建新时间戳
+        int newTimestamp=timeStamp+1;
+        int64_t user_newTimeStamp=userid*number()+newTimestamp;
+        while(m_mapTimstampToFileinfo.find(user_newTimeStamp,file)){
+            newTimestamp++;
+            user_newTimeStamp=userid*number()+newTimestamp;
+        }
+        //3.判断文件类型
+        if(fileType=="file"){
+            //4.文件-调用文件下载
+            STRU_DOWNLOAD_FILE_RQ rq;
+            rq.timestamp=newTimestamp;
+            rq.fileid=fileid;
+            rq.userid=userid;
+            strcpy(rq.dir,curDir.c_str());
+            downloadFile(clientfd,(char*)&rq,sizeof(rq));
+        }else if(fileType=="folder"){
+            //递归调用函数
+            downloadFolderByDir(newTimestamp,userid,fileid,curDir,fileName,clientfd);
+        }
+    }
+
+}
+
+
 
 
