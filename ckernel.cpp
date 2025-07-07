@@ -26,7 +26,7 @@ CKernel::CKernel(QObject *parent)
     setSystemPtah();
     //初始化数据库
     m_sql=new CSqlite;
-    initDatabase(m_id);
+
     //创建网络中介者
     m_pClient=new TcpClientMediator;
     //客户端连接真实地址
@@ -98,7 +98,6 @@ CKernel::~CKernel()
 
 }
 //普通槽函数-------------------------------------------------------------------------------------
-
 
 void CKernel::slot_closeMainDialog()
 {
@@ -381,6 +380,7 @@ void CKernel::slot_pauseUp(int timeStamp,bool isPause)
     //2.map没有-程序异常退出 断点续传，使用协议
     else{
         //断点续传
+
     }
 
 }
@@ -450,6 +450,8 @@ void CKernel::slot_dealLoginRs(uint from, char *data, int len)
         m_pLoginDialog->close();
         m_pMainDialog->show();
         m_id=rs->userid;
+        //初始化数据库
+        initDatabase(m_id);
         m_name=rs->name;
         //获取根目录下文件列表
         m_curDir="/";
@@ -478,7 +480,8 @@ void CKernel::slot_dealUploadFileRs(uint from, char *data, int len)
      FileInfo& file=m_mapTimeToFileinfo[rs->timestamp];
     //4. 重新设置fid值
      file.fileid=rs->fileid;
-    //5.加载上传信息到上传控件 TODO:
+    //5.加载上传信息到上传控件
+     slot_writeUploadTask(file);//将控件信息拷贝到数据库
      m_pMainDialog->slot_insertUploadFile(file);
     //6.发送文件块请求
      STRU_FILE_CONTENT_RQ rq;
@@ -524,9 +527,11 @@ void CKernel::slot_dealContentFileRs(uint from, char *data, int len)
         //更新上传进度
         //方法1：信号槽控制-多线程
         //方法2：直接调用 一定是当前函数在主线程
+
         Q_EMIT sig_updateUploadFileProgress(file.timestamp,file.pos);//时间戳判断文件信息
         //判断是否结束
         if(file.pos>=file.size){
+            slot_deleteUploadTask(file);//删除数据库
             if(file.dir==m_curDir){
                 //刷新列表
                 slot_getCurFileList();
@@ -625,9 +630,9 @@ void CKernel::slot_dealFileHeadRq(uint from, char *data, int len)
         return;
     }
     //保存下载信息到空间 TODO:
+    slot_writeDownloadTask(file);//保存下载任务
     m_pMainDialog->slot_insertDownloadFile(file);
     //4.保存到map
-
     m_mapTimeToFileinfo[rq->timestamp]=file;
     //5.发送文件头回复
     rs.fileid=rq->fileid;
@@ -678,6 +683,7 @@ void CKernel::slot_dealContentFileRq(uint from, char *data, int len)
         Q_EMIT sig_updateDownloadFileProgress(file.timestamp,file.pos);
         //如果到达末尾
         if(file.pos>=file.size){
+            slot_deleteDownloadTask(file);//删除下载数据库数据
             //关闭文件，回收map节点
             fclose(file.pFile);
             m_mapTimeToFileinfo.erase(file.timestamp);
@@ -833,22 +839,41 @@ void CKernel::initDatabase(int id)
         //查看有没有这个文件
         //有 直接加载
         m_sql->ConnectSql(path);
-        // //测试 读取数据
-        // QString sql="select count(*) from t_upload;";
-        // QStringList lststr;
-        // m_sql->SelectSql(sql,1,lststr);
-        // qDebug()<<"上传文件查询到:"<<lststr.front()<<"条数据";
-        // lststr.pop_front();
-        // lststr.clear();
-        // sql="select count(*) from t_download;";
-        // m_sql->SelectSql(sql,1,lststr);
-        // qDebug()<<"下载文件查询到:"<<lststr.front()<<"条数据";
-        // lststr.pop_front();
-        // lststr.clear();
+
         QList<FileInfo> uploadTaskList;
         QList<FileInfo> downloadTaskList;
         slot_getUploadTask(uploadTaskList);
         slot_getDownloadTask(downloadTaskList);
+        //将读取到的数据插入界面表单
+        //1.插入上传
+        for(FileInfo& file:uploadTaskList){
+            //如果文件不存在 不进行插入
+            QFileInfo fi(file.absolutePath);
+            if(!fi.exists())continue;
+            //修改任务的初始状态
+            file.isPause=1;
+            m_pMainDialog->slot_insertUploadFile(file);
+            //上传续传 控件-看不到进行多少
+            //TODO:获取当前位置
+
+            //同步控件位置
+
+        }
+
+        //2.插入下载
+        for(FileInfo& file:downloadTaskList){
+            //如果文件不存在 不进行插入
+            QFileInfo fi(file.absolutePath);
+            if(!fi.exists())continue;
+            //修改任务的初始状态
+            file.isPause=1;
+            //本地文件大小可知-先赋值，后插入
+            file.pos=fi.size();
+            m_pMainDialog->slot_insertDownloadFile(file);
+            //下载续传 控件-看不到进行多少
+            //同步控件位置
+            m_pMainDialog->slot_updateDownloadFileProgress(file.timestamp,file.pos);
+        }
 
     }else{
         //没有 创建表
