@@ -63,6 +63,12 @@ private slots:
     void slot_action_startUp(bool flag);
     void slot_action_startDown(bool flag);
 
+    void on_tb_upload_cellClicked(int row, int column);
+
+    void on_tb_download_cellClicked(int row, int column);
+
+    void on_tb_finished_cellClicked(int row, int column);
+
 public slots:
     //界面控制槽
     void slot_insertUploadFile(FileInfo& file);

@@ -738,3 +738,42 @@ void MainDialog::slot_action_startDown(bool flag)
     qDebug()<<__func__;
 }
 
+
+void MainDialog::on_tb_upload_cellClicked(int row, int column)
+{
+    //点击勾选
+    qDebug()<<__func__;
+    MytablewigetItem* item0=(MytablewigetItem*)ui->tb_upload->item(row,0);
+    if(item0->checkState()==Qt::Checked){
+        item0->setCheckState(Qt::Unchecked);
+    }else{
+        item0->setCheckState(Qt::Checked);
+    }
+}
+
+
+void MainDialog::on_tb_download_cellClicked(int row, int column)
+{
+    //点击勾选
+    qDebug()<<__func__;
+    MytablewigetItem* item0=(MytablewigetItem*)ui->tb_download->item(row,0);
+    if(item0->checkState()==Qt::Checked){
+        item0->setCheckState(Qt::Unchecked);
+    }else{
+        item0->setCheckState(Qt::Checked);
+    }
+}
+
+
+void MainDialog::on_tb_finished_cellClicked(int row, int column)
+{
+    //点击勾选
+    qDebug()<<__func__;
+    MytablewigetItem* item0=(MytablewigetItem*)ui->tb_finished->item(row,0);
+    if(item0->checkState()==Qt::Checked){
+        item0->setCheckState(Qt::Unchecked);
+    }else{
+        item0->setCheckState(Qt::Checked);
+    }
+}
+

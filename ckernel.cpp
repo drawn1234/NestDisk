@@ -7,6 +7,7 @@
 #include "qdir.h"
 #include <QThread>
 #include <QEventLoop>
+
 //定义带参数宏计算协议数
 #define NetMap(a) m_netPackMap[a-_DEF_PACK_BASE]
 //工具函数声明
@@ -15,7 +16,7 @@ static std::string getFileMd5(QString path);
 void Utf8ToGB2312( char* gbbuf , int nlen ,QString& utf8);
 QString GB2312ToUtf8( char* gbbuf );
 CKernel::CKernel(QObject *parent)
-    : QObject{parent},m_id(0),m_curDir("/"),m_quit(false)
+    : QObject{parent},m_id(0),m_curDir("/"),m_quit(false),m_sql(nullptr)
 {
     //加载配置文件
     m_ip="";
@@ -23,6 +24,9 @@ CKernel::CKernel(QObject *parent)
     loadIniFile();
     //设置系统路径
     setSystemPtah();
+    //初始化数据库
+    m_sql=new CSqlite;
+    initDatabase(m_id);
     //创建网络中介者
     m_pClient=new TcpClientMediator;
     //客户端连接真实地址
@@ -810,6 +814,155 @@ void CKernel::slot_dealDeleteFileRs(uint from, char *data, int len)
 
 
 
+//sqlite操作函数---------------------------------------------------------------------
+#include <QDir>
+void CKernel::initDatabase(int id)
+{
+    qDebug()<<__func__;
+    //找到exe，在同级目录下创建目录 /database/id.db
+    QString path=QCoreApplication::applicationDirPath()+"/database/";
+    //查看是否有这个文件
+    QDir dir;
+    if(!dir.exists(path)){
+        //没有 创建表
+        dir.mkdir(path);
+    }
+    path=path+QString("%1.db").arg(id);
+    QFileInfo info(path);
+    if(info.exists()){
+        //查看有没有这个文件
+        //有 直接加载
+        m_sql->ConnectSql(path);
+        // //测试 读取数据
+        // QString sql="select count(*) from t_upload;";
+        // QStringList lststr;
+        // m_sql->SelectSql(sql,1,lststr);
+        // qDebug()<<"上传文件查询到:"<<lststr.front()<<"条数据";
+        // lststr.pop_front();
+        // lststr.clear();
+        // sql="select count(*) from t_download;";
+        // m_sql->SelectSql(sql,1,lststr);
+        // qDebug()<<"下载文件查询到:"<<lststr.front()<<"条数据";
+        // lststr.pop_front();
+        // lststr.clear();
+        QList<FileInfo> uploadTaskList;
+        QList<FileInfo> downloadTaskList;
+        slot_getUploadTask(uploadTaskList);
+        slot_getDownloadTask(downloadTaskList);
+
+    }else{
+        //没有 创建表
+        QFile file(path);
+        if(!file.open(QIODevice::WriteOnly))return;
+        file.close();
+        //连接
+        m_sql->ConnectSql(path);
+        //创建数据库
+        QString sql="create table t_upload (f_id int,f_name varchar(260),f_dir varchar(260),f_absolutePath varchar(260),f_size int,f_md5 varchar(40),f_time varchar(40),f_type varchar(10),f_timestamp int );";
+        m_sql->UpdateSql(sql);
+        sql="create table t_download (f_id int,f_name varchar(260),f_dir varchar(260),f_absolutePath varchar(260),f_size int,f_md5 varchar(40),f_time varchar(40),f_type varchar(10),f_timestamp int );";
+        m_sql->UpdateSql(sql);
+
+    }
+}
+
+void CKernel::slot_writeUploadTask(FileInfo &info)
+{
+    qDebug()<<__func__;
+    //f_id, f_name, f_dir, f_absolutePath, f_size, f_md5, f_time, f_type, f_timestamp
+    QString sql=QString("insert into t_upload values(%1,'%2','%3','%4',%5,'%6','%7','%8',%9);").arg(info.fileid).arg(info.name).arg(info.dir).arg(info.absolutePath).arg(info.size).arg(info.md5).arg(info.time).arg(info.type).arg(info.timestamp);
+    m_sql->UpdateSql(sql);
+
+}
+
+void CKernel::slot_writeDownloadTask(FileInfo &info)
+{
+    qDebug()<<__func__;
+    QString sql=QString("insert into t_download values(%1,'%2','%3','%4',%5,'%6','%7','%8',%9);").arg(info.fileid).arg(info.name).arg(info.dir).arg(info.absolutePath).arg(info.size).arg(info.md5).arg(info.time).arg(info.type).arg(info.timestamp);
+    m_sql->UpdateSql(sql);
+}
+
+void CKernel::slot_deleteUploadTask(FileInfo &info)
+{
+    qDebug()<<__func__;
+    QString sql=QString("delete from t_upload where f_timestamp='%1';").arg(info.timestamp);
+    m_sql->UpdateSql(sql);
+}
+
+void CKernel::slot_deleteDownloadTask(FileInfo &info)
+{
+    qDebug()<<__func__;
+    QString sql=QString("delete from t_download where f_timestamp='%1';").arg(info.timestamp);
+    m_sql->UpdateSql(sql);
+}
+
+void CKernel::slot_getUploadTask(QList<FileInfo> &infoList)
+{
+    qDebug()<<__func__;
+    QStringList lststr;
+    QString sql=QString("select* from t_upload;");
+    m_sql->SelectSql(sql,9,lststr);
+    //f_id, f_name, f_dir, f_absolutePath, f_size, f_md5, f_time, f_type, f_timestamp
+    FileInfo file;
+    while(lststr.size()>0){
+        file.fileid=QString(lststr.front()).toInt();
+        lststr.pop_front();
+        file.name=lststr.front();
+        lststr.pop_front();
+        file.dir=lststr.front();
+        lststr.pop_front();
+        file.absolutePath=lststr.front();
+        lststr.pop_front();
+        file.size=QString(lststr.front()).toInt();
+        lststr.pop_front();
+        file.md5=lststr.front();
+        lststr.pop_front();
+        file.time=lststr.front();
+        lststr.pop_front();
+        file.type=lststr.front();
+        lststr.pop_front();
+        file.timestamp=QString(lststr.front()).toInt();
+        lststr.pop_front();
+
+        infoList.push_back(file);
+    }
+
+}
+
+void CKernel::slot_getDownloadTask(QList<FileInfo> &infoList)
+{
+    qDebug()<<__func__;
+    QStringList lststr;
+    QString sql=QString("select* from t_download;");
+    m_sql->SelectSql(sql,9,lststr);
+    //f_id, f_name, f_dir, f_absolutePath, f_size, f_md5, f_time, f_type, f_timestamp
+    FileInfo file;
+    while(lststr.size()>0){
+        file.fileid=QString(lststr.front()).toInt();
+        lststr.pop_front();
+        file.name=lststr.front();
+        lststr.pop_front();
+        file.dir=lststr.front();
+        lststr.pop_front();
+        file.absolutePath=lststr.front();
+        lststr.pop_front();
+        file.size=QString(lststr.front()).toInt();
+        lststr.pop_front();
+        file.md5=lststr.front();
+        lststr.pop_front();
+        file.time=lststr.front();
+        lststr.pop_front();
+        file.type=lststr.front();
+        lststr.pop_front();
+        file.timestamp=QString(lststr.front()).toInt();
+        lststr.pop_front();
+
+        infoList.push_back(file);
+    }
+
+}
+
+
 //工具函数------------------------------------------------------------------------
 
 void CKernel::loadIniFile()
@@ -895,10 +1048,10 @@ QString GB2312ToUtf8( char* gbbuf )
 }
 
 #define MD5_KEY "1234"
-//生成MD5函数
-//规定给输入的明文，加上对应的类型key值，以val_key的形式给明文加盐
-//使用加盐后的明文生成MD5值
 static std::string getMD5(QString val){
+    //生成MD5函数
+    //规定给输入的明文，加上对应的类型key值，以val_key的形式给明文加盐
+    //使用加盐后的明文生成MD5值
     qDebug()<<__func__;
     //static限制当前文件可用
     QString str=QString("%1_%2").arg(val).arg(MD5_KEY);

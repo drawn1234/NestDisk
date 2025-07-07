@@ -16,6 +16,9 @@ INCLUDEPATH +=./netapi/
 include(./md5/md5.pri)
 INCLUDEPATH +=./md5
 
+include(./sqlapi/sqlapi.pri)
+INCLUDEPATH +=./sqlapi
+
 SOURCES += \
     ckernel.cpp \
     logindialog.cpp \

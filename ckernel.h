@@ -10,6 +10,7 @@
 #include<packdef.h>
 #include"logindialog.h"
 #include "common.h"
+#include "csqlite.h"
 //协议映射表
 //类成员函数指针
 class CKernel;
@@ -74,6 +75,14 @@ private slots:
     void slot_dealgetShareByLinkRs(uint from,char* data,int len);
     void slot_dealAddFolderRq(uint from,char* data,int len);
     void slot_dealDeleteFileRs(uint from,char* data,int len);
+    //数据库操作函数
+    void initDatabase(int id);
+    void slot_getDownloadTask(QList<FileInfo> &infoList);
+    void slot_getUploadTask(QList<FileInfo> &infoList);
+    void slot_deleteDownloadTask(FileInfo &info);
+    void slot_deleteUploadTask(FileInfo &info);
+    void slot_writeDownloadTask(FileInfo &info);
+    void slot_writeUploadTask(FileInfo &info);
 #ifdef USE_SERVER
     //服务端处理数据
     void slot_dealServerData(uint from,char* data,int len);
@@ -84,11 +93,13 @@ private:
     void setNetPackMap();
     void sendData(char* buf,int len);
     void setSystemPtah();
+
+
 private:
     MainDialog* m_pMainDialog;
     TcpClientMediator* m_pClient;
     loginDialog* m_pLoginDialog;
-
+    CSqlite* m_sql;
 
 #ifdef USE_SERVER
     TcpServerMediator* m_pServer;
@@ -109,6 +120,8 @@ private:
     std::map<int,FileInfo> m_mapTimeToFileinfo;
     //退出标志
     bool m_quit;
+
+
 };
 
 #endif // CKERNEL_H
