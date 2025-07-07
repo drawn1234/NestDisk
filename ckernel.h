@@ -56,6 +56,7 @@ private slots:
     void slot_getShareList();
     void slot_getShareByLink(QString dir,int link);
     void slot_deleteFile(QVector<int>& fileidArr,QString dir);
+    void slot_pauseUp(int timeStamp,bool isPause);
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);
@@ -106,6 +107,8 @@ private:
     PFUN m_netPackMap[_DEF_PACK_COUNT];
     //时间戳-文件信息 map
     std::map<int,FileInfo> m_mapTimeToFileinfo;
+    //退出标志
+    bool m_quit;
 };
 
 #endif // CKERNEL_H

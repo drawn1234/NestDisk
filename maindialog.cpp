@@ -63,6 +63,46 @@ MainDialog::MainDialog(QWidget *parent)
     connect(action_deleteFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_deleteFile(bool)));
     connect(action_getShare,SIGNAL(triggered(bool)),this,SLOT(slot_action_getShare(bool)));
 
+    //设置上传文件文件菜单
+    //右键弹出菜单-手动绑定系统信号与槽-使用lambda
+    connect(ui->tb_download,&QTableWidget::customContextMenuRequested,this,
+            [this](QPoint){this->m_menuDownloadFile.exec(QCursor::pos());});
+    connect(ui->tb_upload,&QTableWidget::customContextMenuRequested,this,
+            [this](QPoint){this->m_menuUploadFile.exec(QCursor::pos());});
+    //1.定义菜单项
+    QAction* action_pauseAllUp=new QAction("全部暂停");
+    QAction* action_startAllUp=new QAction("全部开始");
+    QAction* action_pauseAllDown=new QAction("全部暂停");
+    QAction* action_startAllDown=new QAction("全部开始");
+
+    QAction* action_pauseUp=new QAction("暂停");
+    QAction* action_startUp=new QAction("开始");
+    QAction* action_pauseDown=new QAction("暂停");
+    QAction* action_startDown=new QAction("开始");
+    //2.添加菜单项
+    m_menuUploadFile.addAction(action_pauseAllUp);
+    m_menuUploadFile.addAction(action_startAllUp);
+    m_menuDownloadFile.addAction(action_pauseAllDown);
+    m_menuDownloadFile.addAction(action_startAllDown);
+
+    m_menuUploadFile.addAction(action_pauseUp);
+    m_menuUploadFile.addAction(action_startUp);
+    m_menuDownloadFile.addAction(action_pauseDown);
+    m_menuDownloadFile.addAction(action_startDown);
+    //3.绑定菜单项槽函数
+    connect(action_pauseAllUp,SIGNAL(triggered(bool)),this,SLOT(slot_action_pauseAllUp(bool)));
+    connect(action_pauseAllDown,SIGNAL(triggered(bool)),this,SLOT(slot_action_pauseAllDown(bool)));
+    connect(action_startAllUp,SIGNAL(triggered(bool)),this,SLOT(slot_action_startAllUp(bool)));
+    connect(action_startAllDown,SIGNAL(triggered(bool)),this,SLOT(slot_action_startAllDown(bool)));
+
+    connect(action_pauseUp,SIGNAL(triggered(bool)),this,SLOT(slot_action_pauseUp(bool)));
+    connect(action_pauseDown,SIGNAL(triggered(bool)),this,SLOT(slot_action_pauseDown(bool)));
+    connect(action_startUp,SIGNAL(triggered(bool)),this,SLOT(slot_action_startUp(bool)));
+    connect(action_startDown,SIGNAL(triggered(bool)),this,SLOT(slot_action_startDown(bool)));
+
+
+
+
 }
 
 MainDialog::~MainDialog()
@@ -628,5 +668,73 @@ void MainDialog::on_pb_last_clicked()
     ui->lb_path->setText(curDir);
     Q_EMIT sig_changeDir(curDir);
 
+}
+
+
+void MainDialog::slot_action_pauseAllUp(bool flag)
+{
+    //暂停所有上传文件
+    qDebug()<<__func__;
+}
+
+void MainDialog::slot_action_pauseAllDown(bool flag)
+{
+     //暂停所有下载文件
+    qDebug()<<__func__;
+}
+
+void MainDialog::slot_action_startAllUp(bool flag)
+{
+    //开始所有上传文件
+    qDebug()<<__func__;
+}
+
+void MainDialog::slot_action_startAllDown(bool flag)
+{
+    //开始所有下载文件
+    qDebug()<<__func__;
+}
+
+void MainDialog::slot_action_pauseUp(bool flag)
+{
+    //暂停上传文件
+    qDebug()<<__func__;
+    //1.遍历表单
+    int rows=ui->tb_upload->rowCount();
+    for(int i=0;i<rows;i++){
+        //是否打勾
+        MytablewigetItem* item0=(MytablewigetItem*)ui->tb_upload->item(i,0);
+        if(item0->checkState()==Qt::Checked){
+            //检查按钮状态 切换文字 发送信号
+            QPushButton* button=(QPushButton*)ui->tb_upload->cellWidget(i,5);
+            if(button->text()=="暂停"){
+                //信号-设置文件信息结构体暂停标志
+                button->setText("开始");
+                Q_EMIT sig_pauseUp(item0->m_file.timestamp,1);
+            }
+
+        }
+    }
+
+
+}
+
+void MainDialog::slot_action_pauseDown(bool flag)
+{
+    //暂停下载文件
+    qDebug()<<__func__;
+}
+
+void MainDialog::slot_action_startUp(bool flag)
+{
+    //开始上传文件
+    qDebug()<<__func__;
+
+}
+
+void MainDialog::slot_action_startDown(bool flag)
+{
+    //开始所有下载文件
+    qDebug()<<__func__;
 }
 

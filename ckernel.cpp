@@ -5,7 +5,8 @@
 #include <errhandlingapi.h>
 #include "md5.h"
 #include "qdir.h"
-
+#include <QThread>
+#include <QEventLoop>
 //定义带参数宏计算协议数
 #define NetMap(a) m_netPackMap[a-_DEF_PACK_BASE]
 //工具函数声明
@@ -14,7 +15,7 @@ static std::string getFileMd5(QString path);
 void Utf8ToGB2312( char* gbbuf , int nlen ,QString& utf8);
 QString GB2312ToUtf8( char* gbbuf );
 CKernel::CKernel(QObject *parent)
-    : QObject{parent},m_id(0),m_curDir("/")
+    : QObject{parent},m_id(0),m_curDir("/"),m_quit(false)
 {
     //加载配置文件
     m_ip="";
@@ -67,6 +68,8 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_getShareByLink(QString,int)));
     connect(m_pMainDialog,SIGNAL(sig_deleteFile(QVector<int>&,QString)),
             this,SLOT(slot_deleteFile(QVector<int>&,QString)));
+    connect(m_pMainDialog,SIGNAL(sig_pauseUp(int,bool)),
+        this,SLOT(slot_pauseUp(int,bool)));
 
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
@@ -361,6 +364,22 @@ void CKernel::slot_deleteFile(QVector<int>& fileidArr,QString dir)
     sendData((char*)rq,packLen);
     free(rq);
 }
+
+void CKernel::slot_pauseUp(int timeStamp,bool isPause)
+{
+    //ispause 1 从正在上传变成暂停 isPause 0 从暂停 变为继续下载
+    qDebug()<<__func__;
+    //找到文件信息结构体
+    //1.map有-程序未退出-用户暂停 直接置位
+    if(m_mapTimeToFileinfo.count(timeStamp)>0){
+        m_mapTimeToFileinfo[timeStamp].isPause=isPause;
+    }
+    //2.map没有-程序异常退出 断点续传，使用协议
+    else{
+        //断点续传
+    }
+
+}
 //信息处理函数-------------------------------------------------------------------------------
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {
@@ -478,6 +497,20 @@ void CKernel::slot_dealContentFileRs(uint from, char *data, int len)
         qDebug()<<"没有对应文件信息";
         return;
     }
+
+    //判断是否暂停
+    while(file.isPause){
+        //方法1：sleep(1000);
+        //方法2：使用QT线程类进行睡眠-ms
+        //sleep函数在主线程中循环会影响主线程执行，应该将函数放在子线程中执行
+        //为了避免阻塞窗口线程，影响时间循环，加入下面处理 将信号取出并执行
+        //每处理100ms该事件，取出其它累积事件处理
+        QThread::msleep(50);
+        QCoreApplication::processEvents(QEventLoop::AllEvents,50);
+        //如果程序退出，该循环一直存在，为了避免-添加标志位-退出线程
+        if(m_quit)return;
+    }
+
     if(rs->result==false){
         //跳回原位置
         fseek(file.pFile,-1*rs->len,SEEK_CUR);
@@ -609,6 +642,22 @@ void CKernel::slot_dealContentFileRq(uint from, char *data, int len)
     STRU_FILE_CONTENT_RS rs;
     //2.读取文件信息
     FileInfo& file=m_mapTimeToFileinfo[rq->timestamp];
+    if(m_mapTimeToFileinfo.count(rq->timestamp)<=0){
+        qDebug()<<"文件信息为空";
+        return;
+    }
+    //判断是否暂停
+    while(file.isPause){
+        //方法1：sleep(1000);
+        //方法2：使用QT线程类进行睡眠-ms
+        //sleep函数在主线程中循环会影响主线程执行，应该将函数放在子线程中执行
+        //为了避免阻塞窗口线程，影响时间循环，加入下面处理 将信号取出并执行
+        //每处理100ms该事件，取出其它累积事件处理
+        QThread::msleep(50);
+        QCoreApplication::processEvents(QEventLoop::AllEvents,50);
+        if(m_quit)return;
+    }
+
     //3.写入文件
     int wlen=fwrite(rq->content,1,rq->len,file.pFile);
     if(wlen!=rq->len){

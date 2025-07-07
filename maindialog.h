@@ -26,6 +26,7 @@ signals:
     void sig_shareFile(QVector<int>& fileidArr,QString dir);
     void sig_getShareByLink(QString dir,int link);
     void sig_deleteFile(QVector<int>& fileidArr,QString dir);
+    void sig_pauseUp(int timeStamp,bool isPause);
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();
@@ -49,8 +50,18 @@ private slots:
     void slot_action_deleteFile(bool flag);
     void slot_action_getShare(bool flag);
     void on_tb_file_cellDoubleClicked(int row, int column);
-
+    //上一路径
     void on_pb_last_clicked();
+    //文件上传/下载右键菜单栏
+    void slot_action_pauseAllUp(bool flag);
+    void slot_action_pauseAllDown(bool flag);
+    void slot_action_startAllUp(bool flag);
+    void slot_action_startAllDown(bool flag);
+
+    void slot_action_pauseUp(bool flag);
+    void slot_action_pauseDown(bool flag);
+    void slot_action_startUp(bool flag);
+    void slot_action_startDown(bool flag);
 
 public slots:
     //界面控制槽
@@ -71,6 +82,8 @@ private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;
     QMenu m_menuFileInfo;
+    QMenu m_menuUploadFile;
+    QMenu m_menuDownloadFile;
 
 };
 #endif // MAINDIALOG_H
