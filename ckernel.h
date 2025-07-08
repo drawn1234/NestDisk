@@ -58,6 +58,8 @@ private slots:
     void slot_getShareByLink(QString dir,int link);
     void slot_deleteFile(QVector<int>& fileidArr,QString dir);
     void slot_pauseUp(int timeStamp,bool isPause);
+    void slot_pauseDown(int timeStamp,bool isPause);
+
     //网络槽函数
     //客户端处理接收的数据
     void slot_dealClientData(uint from,char* data,int len);

@@ -74,6 +74,8 @@ CKernel::CKernel(QObject *parent)
             this,SLOT(slot_deleteFile(QVector<int>&,QString)));
     connect(m_pMainDialog,SIGNAL(sig_pauseUp(int,bool)),
         this,SLOT(slot_pauseUp(int,bool)));
+    connect(m_pMainDialog,SIGNAL(sig_pauseDown(int,bool)),
+            this,SLOT(slot_pauseDown(int,bool)));
 
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
@@ -380,10 +382,78 @@ void CKernel::slot_pauseUp(int timeStamp,bool isPause)
     //2.map没有-程序异常退出 断点续传，使用协议
     else{
         //断点续传
-
+        //断点续传
+        //创建文件信息 存入map
+        //信息在哪里-控件中取出
+        FileInfo file=m_pMainDialog->slot_getFileInfoByTimestamp(timeStamp);
+        if(file.fileid==0){
+            qDebug()<<"取出文件信息失败";
+            return;
+        }
+        char pathbuf[1024]="";
+        Utf8ToGB2312(pathbuf,1024,file.absolutePath);
+        file.pFile=fopen(pathbuf,"ab");//追加写文件-a 不能使用w-文件会清空
+        if(!file.pFile){
+            qDebug()<<"打开文件失败";
+            return;
+        }
+        file.pos=0;//将标志置为开始 避免一开始就暂停
+        m_mapTimeToFileinfo[timeStamp]=file;
+        //发送上传续传请求
+        STRU_CONTINUE_UPLOAD_RQ rq;
+        rq.userid=m_id;
+        rq.timestamp=timeStamp;
+        rq.fileid=file.fileid;
+        strcpy(rq.dir,file.dir.toUtf8().constData());
+        sendData((char*)&rq,sizeof(rq));
     }
 
 }
+
+void CKernel::slot_pauseDown(int timeStamp,bool isPause)
+{
+    //ispause 1 从正在上传变成暂停 isPause 0 从暂停 变为继续下载
+    qDebug()<<__func__;
+    //找到文件信息结构体
+    //1.map有-程序未退出-用户暂停 直接置位
+    if(m_mapTimeToFileinfo.count(timeStamp)>0){
+        m_mapTimeToFileinfo[timeStamp].isPause=isPause;
+    }
+    //2.map没有-程序异常退出 断点续传，使用协议
+    else{
+        //断点续传
+        //下载的信息已经存在数据库中，重新登录加载，点击开始继续
+        if(isPause==0){
+            //断点续传
+            //创建文件信息 存入map
+            //信息在哪里-控件中取出
+            FileInfo file=m_pMainDialog->slot_getFileInfoByTimestamp(timeStamp);
+            if(file.fileid==0){
+                qDebug()<<"取出文件信息失败";
+            }
+            char pathbuf[1024]="";
+            Utf8ToGB2312(pathbuf,1024,file.absolutePath);
+            file.pFile=fopen(pathbuf,"ab");//追加写文件-a 不能使用w-文件会清空
+            if(!file.pFile){
+                qDebug()<<"打开文件失败";
+                return;
+            }
+            file.pos=0;//将标志置为开始 避免一开始就暂停
+            m_mapTimeToFileinfo[timeStamp]=file;
+            //发协议 告诉服务器，文件下载到哪里了，然后服务器跳转到到对应位置，从哪里开始继续读，然后文件块发送
+            STRU_CONTINUE_DOWNLOAD_RQ rq;
+            rq.userid=m_id;
+            rq.timestamp=timeStamp;
+            rq.fileid=file.fileid;
+            rq.pos=file.pos;
+            strcpy(rq.dir,file.dir.toUtf8().constData());
+            //服务器接收，两种可能 1.文件信息还在（客户端出现异常等待恢复，没有超过预订删除事件） 2.不在（超过了时间）
+            sendData((char*)&rq,sizeof(rq));
+
+        }
+    }
+}
+
 //信息处理函数-------------------------------------------------------------------------------
 void CKernel::slot_dealClientData(uint from, char *data, int len)
 {

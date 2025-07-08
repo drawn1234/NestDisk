@@ -27,6 +27,8 @@ signals:
     void sig_getShareByLink(QString dir,int link);
     void sig_deleteFile(QVector<int>& fileidArr,QString dir);
     void sig_pauseUp(int timeStamp,bool isPause);
+    void sig_pauseDown(int timeStamp,bool isPause);
+
 public:
     MainDialog(QWidget *parent = nullptr);
     ~MainDialog();
@@ -83,7 +85,7 @@ public slots:
     void slot_deleteAllFileInfo();
     void slot_deleteAllShare();
     void slot_insertAllShare(STRU_MY_SHARE_FILE* shareList,int listCount);
-
+    FileInfo slot_getFileInfoByTimestamp(int timeStamp);
 private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;

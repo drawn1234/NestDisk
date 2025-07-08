@@ -400,6 +400,24 @@ void MainDialog::slot_insertAllShare(STRU_MY_SHARE_FILE *shareList, int listCoun
     }
 }
 
+FileInfo MainDialog::slot_getFileInfoByTimestamp(int timeStamp)
+{
+    //取出控件中的文件信息
+    qDebug()<<__func__;
+    //遍历下载查找
+    int rows=ui->tb_download->rowCount();
+    for(int i=0;i<rows;i++){
+        MytablewigetItem* item0=(MytablewigetItem*)ui->tb_download->item(i,0);
+        if(item0->m_file.timestamp==timeStamp)return item0->m_file;
+    }
+    //遍历上传查找
+    rows=ui->tb_upload->rowCount();
+    for(int i=0;i<rows;i++){
+        MytablewigetItem* item0=(MytablewigetItem*)ui->tb_upload->item(i,0);
+        if(item0->m_file.timestamp==timeStamp)return item0->m_file;
+    }
+}
+
 
 
 void MainDialog::slot_updateUploadFileProgress(int timestamp, int pos)
@@ -723,6 +741,22 @@ void MainDialog::slot_action_pauseDown(bool flag)
 {
     //暂停下载文件
     qDebug()<<__func__;
+    //1.遍历表单
+    int rows=ui->tb_download->rowCount();
+    for(int i=0;i<rows;i++){
+        //是否打勾
+        MytablewigetItem* item0=(MytablewigetItem*)ui->tb_download->item(i,0);
+        if(item0->checkState()==Qt::Checked){
+            //检查按钮状态 切换文字 发送信号
+            QPushButton* button=(QPushButton*)ui->tb_download->cellWidget(i,5);
+            if(button->text()=="暂停"){
+                //信号-设置文件信息结构体暂停标志
+                button->setText("开始");
+                Q_EMIT sig_pauseDown(item0->m_file.timestamp,1);
+            }
+
+        }
+    }
 }
 
 void MainDialog::slot_action_startUp(bool flag)
