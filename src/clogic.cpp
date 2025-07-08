@@ -15,6 +15,8 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_MY_SHARE_RQ) = &CLogic::getShareList;
     NetPackMap(_DEF_PACK_GET_SHARE_RQ) = &CLogic::getShareByLink;
     NetPackMap(_DEF_PACK_DELETE_FILE_RQ) = &CLogic::deleteFile;
+    NetPackMap(_DEF_PACK_CONTINUE_DOWNLOAD_RQ) = &CLogic::continueDownload;
+    NetPackMap(_DEF_PACK_CONTINUE_UPLOAD_RQ) = &CLogic::continueUpload;
 
 }
 
@@ -257,6 +259,11 @@ void CLogic::fileContentRq(sock_fd clientfd, char *szbuf, int nlen)
     if(!m_mapTimstampToFileinfo.find(user_time,file)){
          //1.找不到
         printf("找不到文件信息\n");
+        return;
+    }
+    //校验收到的数据长度
+    if(rq->len<=0){
+        cout<<"数据长度<=0"<<endl;
         return;
     }
     //3.写入
@@ -794,6 +801,124 @@ void CLogic::deleteFile(sock_fd clientfd, char *szbuf, int nlen)
     rs.result=true;
     strcpy(rs.dir,rq->dir);
     SendData(clientfd,(char*)&rs,sizeof(rs));
+}
+
+void CLogic::continueDownload(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_CONTINUE_DOWNLOAD_RQ* rq=(STRU_CONTINUE_DOWNLOAD_RQ*)szbuf;
+    //2.根据pos跳转到对应位置
+    FileInfo *file=nullptr;
+    if(!m_mapTimstampToFileinfo.find(rq->timestamp,file)){
+
+        //数据库查询文件信息
+        list<string> lststr;
+        char sql[1024]="";
+        sprintf(sql,"select f_name,f_size,f_uploadtime,f_md5,f_type,f_Path from user_file_info where u_id='%d' and f_id='%d' and f_dir='%s' ;",rq->userid,rq->fileid,rq->dir);
+        bool res=m_sql->SelectMysql(sql,6,lststr);
+        if(!res){
+            printf("查询数据库失败%s\n",sql);
+            return;
+        }
+        if(lststr.size()==0)printf("查询结果为空\n");
+        //找不到创建文件信息
+         file=new FileInfo;
+         file->dir=rq->dir;
+         file->fid=rq->fileid;
+         file->pos=rq->pos;
+         int  userid=rq->userid;
+         file->name=lststr.front();
+         lststr.pop_front();
+         file->size=stoi(lststr.front());
+         lststr.pop_front();
+         file->time=lststr.front();
+         lststr.pop_front();
+         file->md5=lststr.front();
+         lststr.pop_front();
+         file->type=lststr.front();
+         lststr.pop_front();
+         file->absolutePath=lststr.front();
+         lststr.pop_front();
+         file->fileFd=open(file->absolutePath.c_str(),O_RDONLY);
+         if(file->fileFd<=0){
+             cout<<"打开文件失败"<<errno<<endl;
+             return;
+         }
+         //保存进map
+         int64_t user_time=rq->userid*number()+rq->timestamp;
+         m_mapTimstampToFileinfo.insert(user_time,file);
+    }
+    //跳换到指定位置
+    lseek(file->fileFd,rq->pos,SEEK_SET);
+    //3.发送文件块请求
+    STRU_FILE_CONTENT_RQ rqC;
+    rqC.fileid=rq->fileid;
+    rqC.userid=rq->userid;
+    rqC.timestamp=rq->timestamp;
+    rqC.len=read(file->fileFd,rqC.content,_DEF_BUFFER);
+    if(rqC.len<=0){
+        cout<<"读取文件失败"<<error_code()<<endl;
+        return;
+    }
+    SendData(clientfd,(char*)&rqC,sizeof(rqC));
+
+}
+
+void CLogic::continueUpload(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    //1.拆包
+    STRU_CONTINUE_UPLOAD_RQ* rq=(STRU_CONTINUE_UPLOAD_RQ*)szbuf;
+    //2.根据pos跳转到对应位置
+    FileInfo *file=nullptr;
+    if(!m_mapTimstampToFileinfo.find(rq->timestamp,file)){
+
+        //数据库查询文件信息
+        list<string> lststr;
+        char sql[1024]="";
+        sprintf(sql,"select f_name,f_size,f_uploadtime,f_md5,f_type,f_Path from user_file_info where u_id='%d' and f_id='%d' and f_dir='%s' ;",rq->userid,rq->fileid,rq->dir);
+        bool res=m_sql->SelectMysql(sql,6,lststr);
+        if(!res){
+            printf("查询数据库失败%s\n",sql);
+            return;
+        }
+        if(lststr.size()==0)printf("查询结果为空\n");
+        //找不到创建文件信息
+         file=new FileInfo;
+         file->dir=rq->dir;
+         file->fid=rq->fileid;
+         int  userid=rq->userid;
+         file->name=lststr.front();
+         lststr.pop_front();
+         file->size=stoi(lststr.front());
+         lststr.pop_front();
+         file->time=lststr.front();
+         lststr.pop_front();
+         file->md5=lststr.front();
+         lststr.pop_front();
+         file->type=lststr.front();
+         lststr.pop_front();
+         file->absolutePath=lststr.front();
+         lststr.pop_front();
+         file->fileFd=open(file->absolutePath.c_str(),O_WRONLY);
+         if(file->fileFd<=0){
+             cout<<"打开文件失败"<<errno<<endl;
+             return;
+         }
+         //保存进map
+         int64_t user_time=rq->userid*number()+rq->timestamp;
+         m_mapTimstampToFileinfo.insert(user_time,file);
+    }
+    //读取文件信息 （光标移动到文件末尾）更新pos
+    file->pos=lseek(file->fileFd,0,SEEK_END);
+    //3.发送上传续传回复
+    STRU_CONTINUE_UPLOAD_RS rs;
+    rs.fileid=rq->fileid;
+    rs.timestamp=rq->timestamp;
+    rs.pos=file->pos;
+    SendData(clientfd,(char*)&rs,sizeof(rs));
+
 }
 
 

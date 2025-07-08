@@ -53,6 +53,10 @@ public:
     void getShareByLink(sock_fd clientfd, char*szbuf, int nlen);
     //删除文件
     void deleteFile(sock_fd clientfd, char*szbuf, int nlen);
+    //下载续传
+    void continueDownload(sock_fd clientfd, char*szbuf, int nlen);
+    //上传续传
+    void continueUpload(sock_fd clientfd, char*szbuf, int nlen);
 
     /*******************工具函数************************/
     //根据分享文件夹向目标文件夹插入数据
