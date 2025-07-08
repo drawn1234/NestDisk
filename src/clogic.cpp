@@ -773,6 +773,7 @@ void CLogic::deleteFile(sock_fd clientfd, char *szbuf, int nlen)
             printf("查询数据库失败%s\n",sql);
             return;
         }
+        if(lststr.size()<=0) return;
         //4.根据文件类型删除文件关系
         fileType=lststr.front();
         lststr.pop_front();
@@ -794,10 +795,6 @@ void CLogic::deleteFile(sock_fd clientfd, char *szbuf, int nlen)
     strcpy(rs.dir,rq->dir);
     SendData(clientfd,(char*)&rs,sizeof(rs));
 }
-
-
-
-
 
 
 //-------------------工具函数-------------------------------------------------------
@@ -935,12 +932,12 @@ void CLogic::deleteFileById(int u_id, int f_id, string dir,string path)
 //删除文件夹
 void CLogic::deleteFolderById(int u_id, int f_id, string dir,string name)
 {
-    printf("deleteFolderById:%s/%s\n",dir.c_str(),name.c_str());
+    printf("deleteFolderById:%s%s\n",dir.c_str(),name.c_str());
     //1.删除文件关系
     list<string> lststr;
     char sql[1024]="";
     int res=false;
-    sprintf(sql,"delete from  t_user_file where u_id='%d' and f_id='%d' and f_dir='%s' ;",
+    sprintf(sql,"delete from t_user_file where u_id='%d' and f_id='%d' and f_dir='%s' ;",
             u_id,f_id,dir.c_str());
     res=m_sql->UpdataMysql(sql);
     if(!res){
@@ -951,8 +948,8 @@ void CLogic::deleteFolderById(int u_id, int f_id, string dir,string name)
     string curDir=dir+name+"/";
     //3.查询列表文件
     lststr.clear();
-    sprintf(sql,"select f_type,f_name,f_path from user_file_info where f_id='%d' and u_id='%d' and f_dir='%s';",
-            f_id,u_id,dir.c_str());
+    sprintf(sql,"select f_id,f_type,f_name from user_file_info where  u_id='%d' and f_dir='%s';",
+            u_id,curDir.c_str());
     res=m_sql->SelectMysql(sql,3,lststr);
     if(!res){
         printf("查询数据库失败%s\n",sql);
@@ -971,7 +968,7 @@ void CLogic::deleteFolderById(int u_id, int f_id, string dir,string name)
         lststr.pop_front();
         if(fileType=="file"){
             sprintf(sql,"delete from  t_user_file where u_id='%d' and f_id='%d' and f_dir='%s' ;",
-                    u_id,fid,dir.c_str());
+                    u_id,fid,curDir.c_str());
             res=m_sql->UpdataMysql(sql);
             if(!res){
                 printf("更新数据库失败%s\n",sql);
