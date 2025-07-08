@@ -85,7 +85,7 @@ public slots:
     void slot_deleteAllFileInfo();
     void slot_deleteAllShare();
     void slot_insertAllShare(STRU_MY_SHARE_FILE* shareList,int listCount);
-    FileInfo slot_getFileInfoByTimestamp(int timeStamp);
+    bool slot_getFileInfoByTimestamp(int timeStamp,FileInfo& file);
 private:
     Ui::MainDialog *ui;
     QMenu m_menuAddFile;

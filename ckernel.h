@@ -77,6 +77,8 @@ private slots:
     void slot_dealgetShareByLinkRs(uint from,char* data,int len);
     void slot_dealAddFolderRq(uint from,char* data,int len);
     void slot_dealDeleteFileRs(uint from,char* data,int len);
+    void slot_dealCotinueUploadRs(uint from,char* data,int len);
+
     //数据库操作函数
     void initDatabase(int id);
     void slot_getDownloadTask(QList<FileInfo> &infoList);

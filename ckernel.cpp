@@ -382,22 +382,22 @@ void CKernel::slot_pauseUp(int timeStamp,bool isPause)
     //2.map没有-程序异常退出 断点续传，使用协议
     else{
         //断点续传
-        //断点续传
         //创建文件信息 存入map
         //信息在哪里-控件中取出
-        FileInfo file=m_pMainDialog->slot_getFileInfoByTimestamp(timeStamp);
-        if(file.fileid==0){
+        FileInfo file;
+        bool res=m_pMainDialog->slot_getFileInfoByTimestamp(timeStamp,file);
+        if(!res){
             qDebug()<<"取出文件信息失败";
             return;
         }
         char pathbuf[1024]="";
         Utf8ToGB2312(pathbuf,1024,file.absolutePath);
-        file.pFile=fopen(pathbuf,"ab");//追加写文件-a 不能使用w-文件会清空
+        file.pFile=fopen(pathbuf,"rb");//只读打开文件，光标位置收到回复后移动
         if(!file.pFile){
             qDebug()<<"打开文件失败";
             return;
         }
-        file.pos=0;//将标志置为开始 避免一开始就暂停
+        file.isPause=0;//将标志置为开始 避免一开始就暂停
         m_mapTimeToFileinfo[timeStamp]=file;
         //发送上传续传请求
         STRU_CONTINUE_UPLOAD_RQ rq;
@@ -427,8 +427,9 @@ void CKernel::slot_pauseDown(int timeStamp,bool isPause)
             //断点续传
             //创建文件信息 存入map
             //信息在哪里-控件中取出
-            FileInfo file=m_pMainDialog->slot_getFileInfoByTimestamp(timeStamp);
-            if(file.fileid==0){
+            FileInfo file;
+            bool res=m_pMainDialog->slot_getFileInfoByTimestamp(timeStamp,file);
+            if(!res){
                 qDebug()<<"取出文件信息失败";
             }
             char pathbuf[1024]="";
@@ -438,7 +439,7 @@ void CKernel::slot_pauseDown(int timeStamp,bool isPause)
                 qDebug()<<"打开文件失败";
                 return;
             }
-            file.pos=0;//将标志置为开始 避免一开始就暂停
+            file.isPause=0;//将标志置为开始 避免一开始就暂停
             m_mapTimeToFileinfo[timeStamp]=file;
             //发协议 告诉服务器，文件下载到哪里了，然后服务器跳转到到对应位置，从哪里开始继续读，然后文件块发送
             STRU_CONTINUE_DOWNLOAD_RQ rq;
@@ -888,6 +889,41 @@ void CKernel::slot_dealDeleteFileRs(uint from, char *data, int len)
     //slot_getDeleteList();
 }
 
+void CKernel::slot_dealCotinueUploadRs(uint from, char *data, int len)
+{
+    //处理上传续传回复
+    qDebug()<<__func__;
+    //1.拆包
+    STRU_CONTINUE_UPLOAD_RS* rs=(STRU_CONTINUE_UPLOAD_RS*)data;
+    //2.查找文件信息 更新pos 跳转seek
+    if(m_mapTimeToFileinfo.count(rs->timestamp)<=0){
+        qDebug()<<"文件信息不存在-timeStamp:"<<rs->timestamp;
+        return;
+    }
+    FileInfo& file=m_mapTimeToFileinfo[rs->timestamp];
+    file.pos=rs->pos;
+    fseek(file.pFile,file.pos,SEEK_SET);
+    //显示进度刷新
+    m_pMainDialog->slot_updateUploadFileProgress(rs->timestamp,file.pos);
+    //发送文件内容请求
+    STRU_FILE_CONTENT_RQ rq;
+    rq.userid=m_id;
+    rq.fileid=file.fileid;
+    rq.timestamp=file.timestamp;
+    if(file.pFile!=nullptr){
+        rq.len=fread(rq.content,1,_DEF_BUFFER,file.pFile);
+        if(rq.len<=0){
+            qDebug()<<"read file error:"<<GetLastError();
+            return;
+        }
+    }else{
+        qDebug()<<"文件指针为空";
+        return;
+    }
+
+    sendData((char*)&rq,sizeof(rq));
+}
+
 
 
 //sqlite操作函数---------------------------------------------------------------------
@@ -1116,7 +1152,7 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_GET_SHARE_RS)=&CKernel::slot_dealgetShareByLinkRs;
     NetMap(_DEF_PACK_ADD_FOLDER_RQ)=&CKernel::slot_dealAddFolderRq;
     NetMap(_DEF_PACK_DELETE_FILE_RS)=&CKernel::slot_dealDeleteFileRs;
-
+    NetMap(_DEF_PACK_CONTINUE_UPLOAD_RS)=&CKernel::slot_dealCotinueUploadRs;
 }
 
 #include<QTextCodec>

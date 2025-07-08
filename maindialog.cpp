@@ -400,7 +400,7 @@ void MainDialog::slot_insertAllShare(STRU_MY_SHARE_FILE *shareList, int listCoun
     }
 }
 
-FileInfo MainDialog::slot_getFileInfoByTimestamp(int timeStamp)
+bool MainDialog::slot_getFileInfoByTimestamp(int timeStamp,FileInfo& file)
 {
     //取出控件中的文件信息
     qDebug()<<__func__;
@@ -408,14 +408,17 @@ FileInfo MainDialog::slot_getFileInfoByTimestamp(int timeStamp)
     int rows=ui->tb_download->rowCount();
     for(int i=0;i<rows;i++){
         MytablewigetItem* item0=(MytablewigetItem*)ui->tb_download->item(i,0);
-        if(item0->m_file.timestamp==timeStamp)return item0->m_file;
+        if(item0->m_file.timestamp==timeStamp)file=item0->m_file;
+        return true;
     }
     //遍历上传查找
     rows=ui->tb_upload->rowCount();
     for(int i=0;i<rows;i++){
         MytablewigetItem* item0=(MytablewigetItem*)ui->tb_upload->item(i,0);
-        if(item0->m_file.timestamp==timeStamp)return item0->m_file;
+        if(item0->m_file.timestamp==timeStamp)file=item0->m_file;
+        return true;
     }
+    return false;
 }
 
 
@@ -763,6 +766,22 @@ void MainDialog::slot_action_startUp(bool flag)
 {
     //开始上传文件
     qDebug()<<__func__;
+    //1.遍历表单
+    int rows=ui->tb_upload->rowCount();
+    for(int i=0;i<rows;i++){
+        //是否打勾
+        MytablewigetItem* item0=(MytablewigetItem*)ui->tb_upload->item(i,0);
+        if(item0->checkState()==Qt::Checked){
+            //检查按钮状态 切换文字 发送信号
+            QPushButton* button=(QPushButton*)ui->tb_upload->cellWidget(i,5);
+            if(button->text()=="开始"){
+                //信号-设置文件信息结构体暂停标志
+                button->setText("暂停");
+                Q_EMIT sig_pauseUp(item0->m_file.timestamp,0);
+            }
+
+        }
+    }
 
 }
 
@@ -770,6 +789,22 @@ void MainDialog::slot_action_startDown(bool flag)
 {
     //开始所有下载文件
     qDebug()<<__func__;
+    //1.遍历表单
+    int rows=ui->tb_download->rowCount();
+    for(int i=0;i<rows;i++){
+        //是否打勾
+        MytablewigetItem* item0=(MytablewigetItem*)ui->tb_download->item(i,0);
+        if(item0->checkState()==Qt::Checked){
+            //检查按钮状态 切换文字 发送信号
+            QPushButton* button=(QPushButton*)ui->tb_download->cellWidget(i,5);
+            if(button->text()=="开始"){
+                //信号-设置文件信息结构体暂停标志
+                button->setText("暂停");
+                Q_EMIT sig_pauseDown(item0->m_file.timestamp,0);
+            }
+
+        }
+    }
 }
 
 
