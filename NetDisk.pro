@@ -19,6 +19,10 @@ INCLUDEPATH +=./md5
 include(./sqlapi/sqlapi.pri)
 INCLUDEPATH +=./sqlapi
 
+
+include(./VideoPlayer/videoPlayer.pri)
+INCLUDEPATH +=./VideoPlayer
+
 SOURCES += \
     ckernel.cpp \
     logindialog.cpp \

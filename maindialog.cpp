@@ -408,15 +408,19 @@ bool MainDialog::slot_getFileInfoByTimestamp(int timeStamp,FileInfo& file)
     int rows=ui->tb_download->rowCount();
     for(int i=0;i<rows;i++){
         MytablewigetItem* item0=(MytablewigetItem*)ui->tb_download->item(i,0);
-        if(item0->m_file.timestamp==timeStamp)file=item0->m_file;
-        return true;
+        if(item0->m_file.timestamp==timeStamp){
+            file=item0->m_file;
+            return true;
+        }
     }
     //遍历上传查找
     rows=ui->tb_upload->rowCount();
     for(int i=0;i<rows;i++){
         MytablewigetItem* item0=(MytablewigetItem*)ui->tb_upload->item(i,0);
-        if(item0->m_file.timestamp==timeStamp)file=item0->m_file;
-        return true;
+        if(item0->m_file.timestamp==timeStamp){
+            file=item0->m_file;
+            return true;
+        }
     }
     return false;
 }

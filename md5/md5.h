@@ -5,8 +5,8 @@
 #include <string>  
 #include <fstream>  
   
-/* Type define */  
-typedef unsigned char byte;  
+/* Type define */
+typedef unsigned char BYTE;
 typedef unsigned long ulong;  
   
 using std::string;  
@@ -22,16 +22,16 @@ public:
     void update(const void *input, size_t length);  
     void update(const string &str);  
     void update(ifstream &in);  
-    const byte* digest();  
+    const BYTE* digest();
     string toString();  
     void reset();  
 private:  
-    void update(const byte *input, size_t length);  
+    void update(const BYTE *input, size_t length);
     void final();  
-    void transform(const byte block[64]);  
-    void encode(const ulong *input, byte *output, size_t length);  
-    void decode(const byte *input, ulong *output, size_t length);  
-    string bytesToHexString(const byte *input, size_t length);  
+    void transform(const BYTE block[64]);
+    void encode(const ulong *input, BYTE *output, size_t length);
+    void decode(const BYTE *input, ulong *output, size_t length);
+    string bytesToHexString(const BYTE *input, size_t length);
   
     /* class uncopyable */  
     MD5(const MD5&);  
@@ -39,11 +39,11 @@ private:
 private:  
     ulong _state[4];    /* state (ABCD) */  
     ulong _count[2];    /* number of bits, modulo 2^64 (low-order word first) */  
-    byte _buffer[64];   /* input buffer */  
-    byte _digest[16];   /* message digest */  
+    BYTE _buffer[64];   /* input buffer */
+    BYTE _digest[16];   /* message digest */
     bool _finished;     /* calculate finished ? */  
   
-    static const byte PADDING[64];  /* padding for calculate */  
+    static const BYTE PADDING[64];  /* padding for calculate */
     static const char HEX[16];  
     static const size_t BUFFER_SIZE = 1024;  
 };  

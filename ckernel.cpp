@@ -26,6 +26,9 @@ CKernel::CKernel(QObject *parent)
     setSystemPtah();
     //初始化数据库
     m_sql=new CSqlite;
+    //创建播放器
+    m_pVedioPlayer=new PlayerDialog;
+
 
     //创建网络中介者
     m_pClient=new TcpClientMediator;
@@ -105,11 +108,16 @@ void CKernel::slot_closeMainDialog()
 {
     //关闭窗口，回收窗口对象
     qDebug()<<__func__;
+    m_quit=true;
     m_pClient->CloseNet();
     delete m_pClient;
     delete m_pMainDialog;
     m_pMainDialog=nullptr;
     delete m_pLoginDialog;
+    m_pVedioPlayer->close();
+    delete m_pVedioPlayer;
+    m_pVedioPlayer=nullptr;
+
 }
 
 void CKernel::slot_registerCommit(QString tel, QString pass, QString name)

@@ -11,6 +11,7 @@
 #include"logindialog.h"
 #include "common.h"
 #include "csqlite.h"
+#include "playerdialog.h"
 //协议映射表
 //类成员函数指针
 class CKernel;
@@ -104,6 +105,8 @@ private:
     TcpClientMediator* m_pClient;
     loginDialog* m_pLoginDialog;
     CSqlite* m_sql;
+    PlayerDialog* m_pVedioPlayer;
+
 
 #ifdef USE_SERVER
     TcpServerMediator* m_pServer;
