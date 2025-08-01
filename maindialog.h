@@ -28,6 +28,7 @@ signals:
     void sig_deleteFile(QVector<int>& fileidArr,QString dir);
     void sig_pauseUp(int timeStamp,bool isPause);
     void sig_pauseDown(int timeStamp,bool isPause);
+    void sig_playVideo(int fileid,QString dir);
 
 public:
     MainDialog(QWidget *parent = nullptr);
@@ -51,6 +52,7 @@ private slots:
     void slot_action_shareFile(bool flag);
     void slot_action_deleteFile(bool flag);
     void slot_action_getShare(bool flag);
+    void slot_action_playVideo(bool flag);
     void on_tb_file_cellDoubleClicked(int row, int column);
     //上一路径
     void on_pb_last_clicked();

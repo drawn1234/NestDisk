@@ -15,7 +15,9 @@ class PlayerDialog : public QDialog
 public:
     PlayerDialog(QWidget *parent = nullptr);
     ~PlayerDialog();
+    void closeEvent(QCloseEvent* event);
     void close();
+    void playUrl(QString url);
 
 private slots:
     void on_pb_start_clicked();

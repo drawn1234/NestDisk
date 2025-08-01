@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QStyle>
 #include <QMouseEvent>
+#include <QMessageBox>
 
 #define _DEF_PATH "D:\BaiduNetdiskDownload\20241128\kk 2024-11-28 18-15-20.mp4"
 //#define _DEF_PATH "H:/乱七八糟/曾经我也想过一了百了.mp3"
@@ -39,10 +40,27 @@ PlayerDialog::~PlayerDialog()
     delete m_player;
 }
 
+void PlayerDialog::closeEvent(QCloseEvent *event)
+{
+    if(QMessageBox::question(this,"提示","是否退出")
+        ==QMessageBox::Yes){
+        //关闭
+        event->accept();
+        close();
+    }else{
+        event->ignore();
+    }
+}
 void PlayerDialog::close()
 {
     qDebug()<<__func__;
     m_player->stop(true);
+}
+
+void PlayerDialog::playUrl(QString url)
+{
+    qDebug()<<__func__;
+    m_player->setFileName(url);
 }
 
 //Qt 线程

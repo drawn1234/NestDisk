@@ -52,13 +52,15 @@ bool TcpClient::InitNet(const char *szBufIP, unsigned short port)
 	//3. 连接服务器
 	sockaddr_in addr;
 	addr.sin_family = AF_INET ;
-    addr.sin_addr.S_un.S_addr = inet_addr( szBufIP );  /*inet_addr("192.168.31.115")*/ ;  //绑定任意网卡
+    addr.sin_addr.S_un.S_addr = inet_addr(szBufIP);
+    //addr.sin_addr.S_un.S_addr = inet_addr( "192.168.81.174" );  /*inet_addr("192.168.31.115")*/ ;  //绑定任意网卡
     addr.sin_port = htons( port );  //htons 转换为网络字节序 大端存储  43232
-
+    //printf("port::%d",port);
 	
 	if( connect( m_sock ,(const sockaddr* ) &addr , sizeof(addr) ) == SOCKET_ERROR )
 	{
-       // std::cout<<WSAGetLastError()<<std::endl;
+       // std::cout<<"初始化网络，连接服务器失败"<<std::endl;
+        //std::cout<<WSAGetLastError()<<std::endl;
 		UnInitNet();
         return false;
 	}

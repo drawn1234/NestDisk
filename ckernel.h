@@ -60,6 +60,7 @@ private slots:
     void slot_deleteFile(QVector<int>& fileidArr,QString dir);
     void slot_pauseUp(int timeStamp,bool isPause);
     void slot_pauseDown(int timeStamp,bool isPause);
+    void slot_playVideo(int fileId,QString dir);
 
     //网络槽函数
     //客户端处理接收的数据
@@ -79,6 +80,7 @@ private slots:
     void slot_dealAddFolderRq(uint from,char* data,int len);
     void slot_dealDeleteFileRs(uint from,char* data,int len);
     void slot_dealCotinueUploadRs(uint from,char* data,int len);
+    void slot_dealPlayVideoRs(uint from,char* data,int len);
 
     //数据库操作函数
     void initDatabase(int id);

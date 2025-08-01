@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QFileDialog>
 #include <QProgressBar>
+#include <QRegExp >
 MainDialog::MainDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::MainDialog)
@@ -43,6 +44,7 @@ MainDialog::MainDialog(QWidget *parent)
     QAction* action_deleteFile=new QAction("删除文件");
     QAction* action_star=new QAction("收藏");
     QAction* action_getShare=new QAction("获取分享");
+    QAction* action_playVideo=new QAction("播放视频");
 
     //2.添加菜单项
     m_menuFileInfo.addAction(action_addFolder);
@@ -56,12 +58,15 @@ MainDialog::MainDialog(QWidget *parent)
     m_menuFileInfo.addAction(action_star);
     m_menuFileInfo.addSeparator();
     m_menuFileInfo.addAction(action_getShare);
+    m_menuFileInfo.addSeparator();
+    m_menuFileInfo.addAction(action_playVideo);
 
     //3. 绑定菜单项槽函数
     connect(action_downloadFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_dowloadFile(bool)));
     connect(action_shareFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_shareFile(bool)));
     connect(action_deleteFile,SIGNAL(triggered(bool)),this,SLOT(slot_action_deleteFile(bool)));
     connect(action_getShare,SIGNAL(triggered(bool)),this,SLOT(slot_action_getShare(bool)));
+    connect(action_playVideo,SIGNAL(triggered(bool)),this,SLOT(slot_action_playVideo(bool)));
 
     //设置上传文件文件菜单
     //右键弹出菜单-手动绑定系统信号与槽-使用lambda
@@ -658,6 +663,45 @@ void MainDialog::slot_action_getShare(bool flag)
     }
     //3.发送信号 什么目录下面 什么分享码
     Q_EMIT sig_getShareByLink(ui->lb_path->text(),link);
+}
+
+void MainDialog::slot_action_playVideo(bool flag)
+{
+    //右键点击按钮开始播放视频
+    qDebug()<<__func__;
+    //1.校验文件是否是视频文件，是否只选择一个视频文件
+    //遍历所有项
+    int rows=ui->tb_file->rowCount();
+    int rowNum=0;
+    QString fileName;
+    int fileId;
+    MytablewigetItem* item0=nullptr;
+    for(int i=0;i<rows;i++){
+        item0=(MytablewigetItem*)ui->tb_file->item(i,0);
+        //看是否打勾
+        if(item0->checkState()==Qt::Checked){
+            if(rowNum>1)
+            {
+                QMessageBox::about(this,"提示","只能选择一个视频播放");
+                return;
+            }
+            ++rowNum;
+            fileName=item0->m_file.name;
+            //4.过滤文件名
+            QRegExp regex(".*\\.(mp4|avi|mov|mkv|flv|wmv|rmvb|mpeg|mpg|3gp)$",
+                                     Qt::CaseInsensitive);
+            if(!regex.exactMatch(fileName)){
+                QMessageBox::about(this,"提示","请选择视频文件");
+                return;
+            }else{
+                fileId=item0->m_file.fileid;
+            }
+        }
+    }
+    //2.获取当前dir
+    QString dir=ui->lb_path->text();
+    //3.转发给核心类处理
+    Q_EMIT sig_playVideo(fileId,dir);
 }
 
 

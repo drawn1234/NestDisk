@@ -331,6 +331,7 @@ void VideoPlayer::run()
     input_runner.connected = false;
 
 
+
     //3. 打开视频文件
     int res = avformat_open_input(&pFormatCtx, file_path, NULL, NULL);
     if( res < 0 )
@@ -342,11 +343,13 @@ void VideoPlayer::run()
         m_videoState.readThreadFinished = true;
         //视频自动结束 置标志位
         m_playerState = PlayerState::Stop;
+        Q_EMIT SIG_PlayerStateChanged(PlayerState::Stop);
 
         stop(true);  return;
     }else
     {
         input_runner.connected = true;
+        input_runner.lasttime=0;
     }
     /*if( avformat_open_input(&pFormatCtx, file_path, NULL, NULL) != 0 )
     {
@@ -496,6 +499,7 @@ void VideoPlayer::run()
         SDL_PauseAudioDevice(m_videoState.audioID,0);
     }
     Q_EMIT SIG_TotalTime(getTotalTime());
+
 
     //int64_t start_time=av_gettime();
     //int64_t pts=0;  //当前视频帧的pts
@@ -659,6 +663,7 @@ void VideoPlayer::setFileName(const QString &fileName)
     if( m_playerState != PlayerState::Stop ) return;
     m_fileName = fileName;
     m_playerState = PlayerState::Playing;
+    Q_EMIT SIG_PlayerStateChanged(PlayerState::Playing);
     this->start();
 }
 

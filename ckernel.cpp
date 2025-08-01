@@ -79,6 +79,8 @@ CKernel::CKernel(QObject *parent)
         this,SLOT(slot_pauseUp(int,bool)));
     connect(m_pMainDialog,SIGNAL(sig_pauseDown(int,bool)),
             this,SLOT(slot_pauseDown(int,bool)));
+    connect(m_pMainDialog,SIGNAL(sig_playVideo(int,QString)),
+            this,SLOT(slot_playVideo(int,QString)));
 
     //创建登录窗口并显示
     m_pLoginDialog=new loginDialog;
@@ -461,6 +463,18 @@ void CKernel::slot_pauseDown(int timeStamp,bool isPause)
 
         }
     }
+}
+
+void CKernel::slot_playVideo(int fileId, QString dir)
+{
+    //处理文件播放按键事件
+    qDebug()<<__func__;
+    //1.发送请求
+    STRU_PLAY_VIDEO_RQ rq;
+    rq.fileid=fileId;
+    rq.userId=m_id;
+    strcpy(rq.dir,dir.toUtf8().data());
+    sendData((char*)&rq,sizeof(rq));
 }
 
 //信息处理函数-------------------------------------------------------------------------------
@@ -931,6 +945,21 @@ void CKernel::slot_dealCotinueUploadRs(uint from, char *data, int len)
 
     sendData((char*)&rq,sizeof(rq));
 }
+#define _PLAY_URL "http://服务器ip:80/hls/101.m3u8"
+void CKernel::slot_dealPlayVideoRs(uint from, char *data, int len)
+{
+    //处理播放视频回复
+    qDebug()<<__func__;
+    STRU_PLAY_VIDEO_RS* rs=(STRU_PLAY_VIDEO_RS*)data;
+    if(!rs->result)
+    {
+        return;
+    }
+    QString url=QString("http://%1:%2%3").arg(m_ip).arg(rs->serverPort).arg(rs->playDir);
+    m_pVedioPlayer->show();
+    m_pVedioPlayer->playUrl(url);
+    qDebug()<<"url:"<<url;
+}
 
 
 
@@ -1161,6 +1190,8 @@ void CKernel::setNetPackMap()
     NetMap(_DEF_PACK_ADD_FOLDER_RQ)=&CKernel::slot_dealAddFolderRq;
     NetMap(_DEF_PACK_DELETE_FILE_RS)=&CKernel::slot_dealDeleteFileRs;
     NetMap(_DEF_PACK_CONTINUE_UPLOAD_RS)=&CKernel::slot_dealCotinueUploadRs;
+    NetMap(_DEF_PACK_PLAY_VIDEO_RS)=&CKernel::slot_dealPlayVideoRs;
+
 }
 
 #include<QTextCodec>
