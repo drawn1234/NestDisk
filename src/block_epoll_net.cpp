@@ -34,6 +34,7 @@ bool Block_Epoll_Net::InitNet(int port, void (*recv_callback)(int, char *, int))
     local_addr.sin_family = AF_INET;
     local_addr.sin_port = htons(port);
     local_addr.sin_addr.s_addr = INADDR_ANY;
+    //local_addr.sin_addr.s_addr =inet_addr("127.0.0.1");
 
     //bind addr
     ret = bind(m_listenfd, (struct sockaddr *)&local_addr, sizeof(struct sockaddr_in));

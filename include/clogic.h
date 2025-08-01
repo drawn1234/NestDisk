@@ -5,6 +5,7 @@
 //宏定义添加UL 避免截断
 #include"TCPKernel.h"
 #include "packdef.h"
+#include "transcode.h"
 class CLogic
 {
 public:
@@ -57,7 +58,8 @@ public:
     void continueDownload(sock_fd clientfd, char*szbuf, int nlen);
     //上传续传
     void continueUpload(sock_fd clientfd, char*szbuf, int nlen);
-
+    //播放视频
+    void playVideo(sock_fd clientfd, char*szbuf, int nlen);
     /*******************工具函数************************/
     //根据分享文件夹向目标文件夹插入数据
     void addFolderByShareDir(string dirDest,int userDestId,string dirSource,int userSourceId,string time);
@@ -73,6 +75,7 @@ private:
     Block_Epoll_Net * m_tcp;
     MyMap<int,STRU_USERINFO*> m_mapIdToUserinfo;
     MyMap<int,FileInfo*> m_mapTimstampToFileinfo;
+    transCode m_transCode;
 };
 
 #endif // CLOGIC_H

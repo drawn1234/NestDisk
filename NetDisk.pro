@@ -14,7 +14,8 @@ SOURCES += \
     src/block_epoll_net.cpp \
     src/clogic.cpp \
     src/err_str.cpp \
-    src/main.cpp
+    src/main.cpp \
+    src/transcode.cpp
 
 DISTFILES += \
     src/makefile
@@ -26,4 +27,5 @@ HEADERS += \
     include/block_epoll_net.h \
     include/clogic.h \
     include/err_str.h \
-    include/packdef.h
+    include/packdef.h \
+    include/transcode.h

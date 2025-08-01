@@ -644,3 +644,33 @@ struct STRU_CONTINUE_UPLOAD_RS
 };
 
 
+//////////播放视频协议//////////////////////////////////////////////
+#define _DEF_PACK_PLAY_VIDEO_RQ     (_DEF_PACK_BASE + 30)
+#define _DEF_PACK_PLAY_VIDEO_RS    (_DEF_PACK_BASE + 31)
+
+struct STRU_PLAY_VIDEO_RQ
+{
+    STRU_PLAY_VIDEO_RQ():type(_DEF_PACK_PLAY_VIDEO_RQ){
+        fileid = 0;
+        memset( dir , 0 , sizeof(dir));
+    }
+    PackType type;
+    int fileid;
+    int userId;
+    char dir[_MAX_PATH_SIZE];
+};
+
+struct STRU_PLAY_VIDEO_RS
+{
+    STRU_PLAY_VIDEO_RS():type(_DEF_PACK_PLAY_VIDEO_RS){
+        fileid = 0;
+        result=0;
+        serverPort=80;
+        memset( playDir , 0 , sizeof(playDir));
+    }
+    PackType type;
+    int result;
+    int fileid;
+    int serverPort;//nginx配置端口
+    char playDir[_MAX_PATH_SIZE];//服务器相对播放路径
+};

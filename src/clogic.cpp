@@ -17,6 +17,8 @@ void CLogic::setNetPackMap()
     NetPackMap(_DEF_PACK_DELETE_FILE_RQ) = &CLogic::deleteFile;
     NetPackMap(_DEF_PACK_CONTINUE_DOWNLOAD_RQ) = &CLogic::continueDownload;
     NetPackMap(_DEF_PACK_CONTINUE_UPLOAD_RQ) = &CLogic::continueUpload;
+    NetPackMap(_DEF_PACK_PLAY_VIDEO_RQ) = &CLogic::playVideo;
+
 
 }
 
@@ -28,6 +30,7 @@ long CLogic::number()
 #define _DEF_COUT_FUNC_    cout << "clientfd:"<< clientfd <<" "<< __func__ << endl;
 
 #define _DEF_PATH "/home/xx/Node/NetDisk/"
+#define _DEF_VIDEO_PATH "/home/xx/Node/NetDisk/video/"
 //注册
 void CLogic::RegisterRq(sock_fd clientfd,char* szbuf,int nlen)
 {
@@ -209,8 +212,7 @@ void CLogic::uploadFile(sock_fd clientfd, char *szbuf, int nlen)
     m_mapTimstampToFileinfo.insert(user_time,file);
     //5. 数据库操作
         //1. 插入文件信息
-        sprintf(sql,"insert into t_file(f_size,f_path,f_md5,f_count,f_state,f_type) values('%d','%s','%s',0,0,'%s');",
-                file->size,cPath,file->md5.c_str(),file->type.c_str());
+        sprintf(sql,"insert into t_file(f_size,f_path,f_md5,f_count,f_state,f_type) values('%d','%s','%s',0,0,'%s');",file->size,cPath,file->md5.c_str(),file->type.c_str());
         res=m_sql->UpdataMysql(sql);
         if(!res){
             printf("insert  file error:%s\n",sql);
@@ -810,8 +812,8 @@ void CLogic::continueDownload(sock_fd clientfd, char *szbuf, int nlen)
     STRU_CONTINUE_DOWNLOAD_RQ* rq=(STRU_CONTINUE_DOWNLOAD_RQ*)szbuf;
     //2.根据pos跳转到对应位置
     FileInfo *file=nullptr;
+    int64_t user_time=rq->userid*number()+rq->timestamp;
     if(!m_mapTimstampToFileinfo.find(rq->timestamp,file)){
-
         //数据库查询文件信息
         list<string> lststr;
         char sql[1024]="";
@@ -821,7 +823,11 @@ void CLogic::continueDownload(sock_fd clientfd, char *szbuf, int nlen)
             printf("查询数据库失败%s\n",sql);
             return;
         }
-        if(lststr.size()==0)printf("查询结果为空\n");
+        if(lststr.size()==0){
+            printf("查询结果为空\n");
+            return;
+        }
+
         //找不到创建文件信息
          file=new FileInfo;
          file->dir=rq->dir;
@@ -846,9 +852,10 @@ void CLogic::continueDownload(sock_fd clientfd, char *szbuf, int nlen)
              return;
          }
          //保存进map
-         int64_t user_time=rq->userid*number()+rq->timestamp;
          m_mapTimstampToFileinfo.insert(user_time,file);
     }
+     //同步pos
+     file->pos=rq->pos;
     //跳换到指定位置
     lseek(file->fileFd,rq->pos,SEEK_SET);
     //3.发送文件块请求
@@ -883,7 +890,10 @@ void CLogic::continueUpload(sock_fd clientfd, char *szbuf, int nlen)
             printf("查询数据库失败%s\n",sql);
             return;
         }
-        if(lststr.size()==0)printf("查询结果为空\n");
+        if(lststr.size()==0){
+            printf("查询结果为空\n");
+            return;
+        }
         //找不到创建文件信息
          file=new FileInfo;
          file->dir=rq->dir;
@@ -919,6 +929,58 @@ void CLogic::continueUpload(sock_fd clientfd, char *szbuf, int nlen)
     rs.pos=file->pos;
     SendData(clientfd,(char*)&rs,sizeof(rs));
 
+}
+#define _DEF_INPUT_PATH "/home/xx/Node/NetDisk/hls/"
+void CLogic::playVideo(sock_fd clientfd, char *szbuf, int nlen)
+{
+    _DEF_COUT_FUNC_
+    STRU_PLAY_VIDEO_RQ* rq=(STRU_PLAY_VIDEO_RQ*)szbuf;
+    string path="";
+    string md5="";
+    //1.查询文件-MD5/PATH
+    char sql[1024]="";
+    list<string> lststr;
+    //f_md5 f_Path
+    sprintf(sql,"select f_md5,f_Path from user_file_info where u_id='%d' and f_id='%d' and f_dir='%s';",
+            rq->userId,rq->fileid,rq->dir);
+    if(!m_sql->SelectMysql(sql,2,lststr)){
+        printf("查询数据库失败:%s\n",sql);
+        return;
+    }
+
+    while(lststr.size()){
+        md5=lststr.front();
+        lststr.pop_front();
+        path=lststr.front();
+        lststr.pop_front();
+    }
+    //2.拼接输出路径 "/home/xx/Node/NetDisk/hls/"+md5/
+    char outputDir[1024]="";
+    sprintf(outputDir,"%s%s/",_DEF_INPUT_PATH,md5.c_str());
+    char outputPath[1024]="";
+    sprintf(outputPath,"%s%s.m3u8",outputDir,md5.c_str());
+    //如果目录不存在就创建
+    struct stat st;
+    if (stat(outputDir, &st) != 0) {
+        umask(0000);
+        if (mkdir(outputDir, 0777) != 0) {
+            fprintf(stderr, "创建目录失败: %s\n", outputDir);
+        }
+        //转码
+        if(!m_transCode.transcode(path,outputPath)){
+            printf("转码推流失败\n");
+            return;
+        }
+    }
+    //目录存在 该文件已经转码，直接提供播放路径
+    char playDir[1024]="";
+    sprintf(playDir,"/hls/%s/%s.m3u8",md5.c_str(),md5.c_str());
+    STRU_PLAY_VIDEO_RS  rs;
+    rs.fileid=rq->fileid;
+    rs.result=true;
+    rs.serverPort=80;
+    sprintf(rs.playDir,playDir);
+    SendData(clientfd,(char*)&rs,sizeof(rs));
 }
 
 
